@@ -1759,6 +1759,200 @@ bool g_bDetectSmoke2 = false;
 bool g_bDetectedSmoke = false;
 ID3D11DepthStencilView* g_pSmokeDepthStencilView = nullptr;
 
+// Viewing with these copies the bytes as they are, which is what we want, since the engine
+// writes sRGB encoded bytes into its (typeless) UI target and moves them as is to the (UNORM) back buffer.
+DXGI_FORMAT ToNonSrgbTypedFormat(DXGI_FORMAT format) {
+    switch(format) {
+    case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        return DXGI_FORMAT_R8G8B8A8_UNORM;
+    case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8A8_UNORM;
+    case DXGI_FORMAT_B8G8R8X8_TYPELESS:
+    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8X8_UNORM;
+    case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+        return DXGI_FORMAT_R10G10B10A2_UNORM;
+    case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+        return DXGI_FORMAT_R16G16B16A16_FLOAT;
+    }
+    return format;
+}
+
+// Bypasses our CreateRenderTargetView hook, which would re-initialize the device dependencies for back buffer targets.
+HRESULT CreateRenderTargetViewUnhooked(ID3D11Device * pDevice, ID3D11Resource * pResource, const D3D11_RENDER_TARGET_VIEW_DESC * pDesc, ID3D11RenderTargetView ** ppRTView);
+
+// Holds the image of the previewed stream (if it is not simply the presented image) and puts it on screen.
+//
+// Preferably the image is drawn into the UI render target right before the Panorama engine console is drawn,
+// so the console remains visible and usable. If that is not possible (e.g. other captures in the same pass
+// read the presented image), it's drawn onto the swapchain back buffer before present instead.
+class CStreamPreview {
+public:
+    void OnTargetEnd() {
+        if (m_pTextureSrv) {
+            m_pTextureSrv->Release();
+            m_pTextureSrv = nullptr;
+        }
+        if (m_pTexture) {
+            m_pTexture->Release();
+            m_pTexture = nullptr;
+        }
+        m_HasImage = false;
+        m_Applied = false;
+    }
+
+    // Copies pSrcTexture, of which the top-left srcWidth x srcHeight area is the image.
+    // We always keep a single sample, single mip, typed (non-sRGB) copy, so it can be scaled and copied anywhere.
+    void Update(ID3D11Device * pDevice, ID3D11DeviceContext * pContext, ID3D11Texture2D * pSrcTexture, UINT srcWidth, UINT srcHeight) {
+        if(nullptr == pDevice || nullptr == pContext || nullptr == pSrcTexture) return;
+
+        D3D11_TEXTURE2D_DESC srcDesc;
+        pSrcTexture->GetDesc(&srcDesc);
+
+        DXGI_FORMAT format = ToNonSrgbTypedFormat(srcDesc.Format);
+
+        if (nullptr != m_pTexture) {
+            if (m_TextureDesc.Width != srcDesc.Width
+                || m_TextureDesc.Height != srcDesc.Height
+                || m_TextureDesc.Format != format
+            ) {
+                OnTargetEnd();
+            }
+        }
+
+        if (nullptr == m_pTexture) {
+            D3D11_TEXTURE2D_DESC desc = {};
+            desc.Width = srcDesc.Width;
+            desc.Height = srcDesc.Height;
+            desc.MipLevels = 1;
+            desc.ArraySize = 1;
+            desc.Format = format;
+            desc.SampleDesc.Count = 1;
+            desc.SampleDesc.Quality = 0;
+            desc.Usage = D3D11_USAGE_DEFAULT;
+            desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+            desc.CPUAccessFlags = 0;
+            desc.MiscFlags = 0;
+            m_TextureDesc = desc;
+            pDevice->CreateTexture2D(&desc, nullptr, &m_pTexture);
+            if (m_pTexture) {
+                // If this fails (unknown typeless format), we can only copy, not scale.
+                pDevice->CreateShaderResourceView(m_pTexture, nullptr, &m_pTextureSrv);
+            }
+        }
+
+        if (nullptr == m_pTexture) return;
+
+        if (1 < srcDesc.SampleDesc.Count) {
+            pContext->ResolveSubresource(m_pTexture, 0, pSrcTexture, 0, format);
+        } else {
+            pContext->CopySubresourceRegion(m_pTexture, 0, 0, 0, 0, pSrcTexture, 0, nullptr);
+        }
+        m_Width = srcWidth;
+        m_Height = srcHeight;
+        m_HasImage = true;
+    }
+
+    // Whether we may draw into the UI render target (nothing else reads the presented image in this pass).
+    void SetAllowInTarget(bool value) {
+        m_AllowInTarget = value;
+    }
+
+    void OnBeforePanoramaEngineConsole(ID3D11DeviceContext * pContext) {
+        if(!m_HasImage || m_Applied || !m_AllowInTarget || nullptr == g_BeforeUiRT) return;
+
+        ID3D11Resource * pResource = nullptr;
+        g_BeforeUiRT->GetResource(&pResource);
+        if(nullptr == pResource) return;
+
+        ID3D11Texture2D * pDstTexture = nullptr;
+        pResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&pDstTexture);
+        pResource->Release();
+        if(nullptr == pDstTexture) return;
+
+        m_Applied = Draw(pContext, pDstTexture);
+
+        pDstTexture->Release();
+    }
+
+    bool NeedsDrawBeforePresent() {
+        return m_HasImage && !m_Applied;
+    }
+
+    // Puts the image onto pDstTexture without any sRGB conversion.
+    bool Draw(ID3D11DeviceContext * pContext, ID3D11Texture2D * pDstTexture) {
+        if(!m_HasImage || nullptr == pContext || nullptr == pDstTexture || nullptr == g_pDevice) return false;
+
+        D3D11_TEXTURE2D_DESC dstDesc;
+        pDstTexture->GetDesc(&dstDesc);
+
+        bool bOldInOwnDraw = g_bInOwnDraw;
+        g_bInOwnDraw = true;
+
+        bool bResult = false;
+        if (m_TextureDesc.Width == dstDesc.Width
+            && m_TextureDesc.Height == dstDesc.Height
+            && m_TextureDesc.Format == ToNonSrgbTypedFormat(dstDesc.Format) // same format group, copies bytes as they are.
+            && 1 == dstDesc.SampleDesc.Count
+        ) {
+            // Subresource 0 is mip 0 of array slice 0.
+            pContext->CopySubresourceRegion(pDstTexture, 0, 0, 0, 0, m_pTexture, 0, nullptr);
+            bResult = true;
+        } else if(m_pTextureSrv) {
+            D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+            rtvDesc.Format = ToNonSrgbTypedFormat(dstDesc.Format);
+            if(1 < dstDesc.SampleDesc.Count) {
+                if(1 < dstDesc.ArraySize) {
+                    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMSARRAY;
+                    rtvDesc.Texture2DMSArray.FirstArraySlice = 0;
+                    rtvDesc.Texture2DMSArray.ArraySize = 1;
+                } else {
+                    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
+                }
+            } else if(1 < dstDesc.ArraySize) {
+                rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+                rtvDesc.Texture2DArray.MipSlice = 0;
+                rtvDesc.Texture2DArray.FirstArraySlice = 0;
+                rtvDesc.Texture2DArray.ArraySize = 1;
+            } else {
+                rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+                rtvDesc.Texture2D.MipSlice = 0;
+            }
+            ID3D11RenderTargetView * pDstRtv = nullptr;
+            if(SUCCEEDED(CreateRenderTargetViewUnhooked(g_pDevice, pDstTexture, &rtvDesc, &pDstRtv)) && pDstRtv) {
+                bResult = g_CaptureScaler.Scale(pContext,
+                    m_pTextureSrv, m_TextureDesc.Width, m_TextureDesc.Height, m_Width, m_Height,
+                    pDstRtv, dstDesc.Width, dstDesc.Height,
+                    m_Width != dstDesc.Width || m_Height != dstDesc.Height
+                );
+                pDstRtv->Release();
+            }
+        }
+
+        g_bInOwnDraw = bOldInOwnDraw;
+
+        return bResult;
+    }
+
+    void OnEndFrame() {
+        m_HasImage = false;
+        m_Applied = false;
+        m_AllowInTarget = false;
+    }
+
+private:
+    ID3D11Texture2D * m_pTexture = nullptr;
+    ID3D11ShaderResourceView * m_pTextureSrv = nullptr;
+    D3D11_TEXTURE2D_DESC m_TextureDesc = {};
+    UINT m_Width = 0;
+    UINT m_Height = 0;
+    bool m_HasImage = false;
+    bool m_Applied = false;
+    bool m_AllowInTarget = false;
+} g_StreamPreview;
+
 extern void ErrorBox(char const * messageText);
 
 /*
@@ -1900,6 +2094,11 @@ typedef HRESULT (STDMETHODCALLTYPE * CreateRenderTargetView_t)( ID3D11Device * T
 
 CreateRenderTargetView_t g_Old_CreateRenderTargetView = nullptr;
 
+HRESULT CreateRenderTargetViewUnhooked(ID3D11Device * pDevice, ID3D11Resource * pResource, const D3D11_RENDER_TARGET_VIEW_DESC * pDesc, ID3D11RenderTargetView ** ppRTView) {
+    if(g_Old_CreateRenderTargetView) return g_Old_CreateRenderTargetView(pDevice, pResource, pDesc, ppRTView);
+    return pDevice->CreateRenderTargetView(pResource, pDesc, ppRTView);
+}
+
 HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
             /* [annotation] */ 
             _In_  ID3D11Resource *pResource,
@@ -1919,6 +2118,7 @@ HRESULT STDMETHODCALLTYPE New_CreateRenderTargetView(  ID3D11Device * This,
             if(pResource == pTexture/* && (g_pDevice == nullptr || This != g_pDevice)*/) {
                 if(g_pDevice) {
                     g_NoDraw.OnTargetEnd();
+                    g_StreamPreview.OnTargetEnd();
                     g_DepthCompositor.OnTargetEnd();
                     g_CaptureScaler.OnTargetEnd();
                     //CAfxShaderResourceViews::Clear();
@@ -2129,7 +2329,25 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
 
 void Before_Present();
 void After_Present();
-            
+
+// Draws the stream preview onto the swapchain back buffer, if it was not drawn before the console already.
+// Must be called right before the real present.
+void DrawStreamPreviewToSwapChain() {
+    if(!g_StreamPreview.NeedsDrawBeforePresent()) return;
+    if(nullptr == g_pSwapChain || nullptr == g_pDevice) return;
+
+    ID3D11DeviceContext * pContext = g_RenderCommands.RenderThread_GetContext();
+    if(nullptr == pContext) return;
+
+    ID3D11Texture2D * pDstTexture = nullptr;
+    g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pDstTexture);
+    if(nullptr == pDstTexture) return;
+
+    g_StreamPreview.Draw(pContext, pDstTexture);
+
+    pDstTexture->Release();
+}
+
 class CAfxRenderCallbackUpdateBuffers : public IRenderThreadCallback
 {
 public:
@@ -2143,6 +2361,7 @@ public:
 
             if(g_bExpectPresent && g_pSwapChain) {
                 BlitToSwapChain();
+                DrawStreamPreviewToSwapChain();
                 g_Present_LastResult = g_OldPresent(g_pSwapChain, g_Present_LastSyncInterval, g_Present_LastPresentFlags);
             }
 
@@ -2710,6 +2929,7 @@ void After_Present() {
 
     g_RenderCommands.RenderThread_EndFrame();    
     g_DepthCompositor.OnEndFrame();
+    g_StreamPreview.OnEndFrame();
 
 	g_ReShadeAdvancedfx.ResetHasRendered();
 
@@ -2733,8 +2953,10 @@ HRESULT STDMETHODCALLTYPE New_Present( void * This,
         g_Present_LastPresentFlags = Flags;
 
         Before_Present();
-    
-        HRESULT result = g_Present_Suppress ? g_Present_LastResult : (g_Present_LastResult = g_OldPresent(This, SyncInterval, Flags));
+
+        if(!g_Present_Suppress) DrawStreamPreviewToSwapChain();
+
+        HRESULT result =g_Present_Suppress ? g_Present_LastResult : (g_Present_LastResult = g_OldPresent(This, SyncInterval, Flags));
         g_Present_Suppress = false;
 
         After_Present();
@@ -2816,18 +3038,6 @@ HRESULT WINAPI New_CreateDXGIFactory1(REFIID riid, _COM_Outptr_ void **ppFactory
         
     return result;
 }
-
-typedef bool (__fastcall * CRenderDeviceBase_Present_t)(
-    void * This, void * Rdx, void * R8d, void * R9d, void * Stack0, void * Stack1, void * Stack2, void * Stack3, void * Stack4);
-
-CRenderDeviceBase_Present_t g_Old_CRenderDeviceBase_Present = nullptr;
-
-
-CAfxCapture * g_ActiveCapture = nullptr;
-
-
-bool __fastcall New_CRenderDeviceBase_Present(
-    void * This, void * Rdx, void * R8d, void * R9d, void * Stack0, void * Stack1, void * Stack2, void * Stack3, void * Stack4);
 
 /*
 std::string g_ViewName("Player 0");
@@ -3066,6 +3276,26 @@ void QueueCallbackAfterPostProcessing(void* pCRenderContextDx11_SoftwareCommandL
     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackAfterPostProcessing());
 }
 
+class CAfxRenderCallbackBeforePanoramaEngineConsole : public IRenderThreadCallback
+{
+public:
+    CAfxRenderCallbackBeforePanoramaEngineConsole()
+    {
+    }
+
+    virtual void OnCallback(void) {
+        if (auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
+            g_StreamPreview.OnBeforePanoramaEngineConsole(pDeviceContext);
+        }
+        delete this;
+    }
+};
+
+void QueueCallbackBeforePanoramaEngineConsole(void* pCRenderContextDx11_SoftwareCommandList) {
+    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+    fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforePanoramaEngineConsole());
+}
+
 typedef unsigned char* (__fastcall* SceneSystem_CreateRenderContextPtr2_t)(unsigned char* param_1, unsigned char param_2, void* pDevice, const char * fmt, ...);
 SceneSystem_CreateRenderContextPtr2_t g_Old_SceneSystem_CreateRenderContextPtr2 = nullptr;
 unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char *param_1,unsigned char param_2, void* pDevice, const char * fmt, ...) {
@@ -3171,14 +3401,7 @@ void Hook_RenderSystemDX11(void * hModule) {
             }
         }
 
-        // CRenderDeviceBase::Present
-        //
-        // Function jmps into a function that references string "CRenderDeviceBase::Present(640):".
-        if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable((HMODULE)hModule,".?AVCRenderDeviceDx11@@", 0, 0x0)) {
-            AfxDetourPtr(&(vtable[16]),New_CRenderDeviceBase_Present,(PVOID*)&g_Old_CRenderDeviceBase_Present);
-        } else ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-		// See MirvColors.cpp "g_Original_renderSmokes"
+        // See MirvColors.cpp "g_Original_renderSmokes"
 		//     buf = (**(code **)(*param_2 + 0x100))(param_2, 0x9c0, &data);   // Lock, returns a handle
 		//     ... loop
 		//     (**(code **)(*param_2 + 0x108))(param_2, buf, 0x9c0);           // Unlock, gets the handle
@@ -3329,32 +3552,6 @@ void Hook_SceneSystem(void * hModule) {
     }
 }
 
-void EndCapture() {
-    if(g_ActiveCapture) {
-        auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
-        {
-            auto & queue = pRenderPassCommands.AfterPresentOrContextLossReliable;
-            CAfxCapture * capture = g_ActiveCapture;
-            queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
-                capture->ShutDown(pDeviceContext);
-            }); 
-        }
-        {
-            auto & queue = pRenderPassCommands.FinalizeReliable;
-            CAfxCapture * capture = g_ActiveCapture;
-            queue.Push([capture](){
-                delete capture;
-            }); 
-        }        
-        g_ActiveCapture = nullptr;
-    }
-}
-
-void CreateCapture(class advancedfx::COutVideoStreamCreator* pOutVideoStreamCreator) {
-    EndCapture();
-    g_ActiveCapture = new CAfxCapture(pOutVideoStreamCreator, CAfxCapture::CaptureType_Default);
-}
-
 advancedfx::CGrowingBufferPoolThreadSafe g_ImageBufferPool;
 
 SOURCESDK::CS2::ConVarHandle Unlock_smoke_volume_lod_ratio_change() {
@@ -3429,7 +3626,7 @@ void AfxStreams_SetStartMovieWavPath(const std::wstring & value) {
     g_StartMovieWavPath = value;
 }
 
-class CAfxStreams : public advancedfx::IRecordStreamSettings {
+class CAfxStreams {
 public:
     bool m_CampathAutoSave = false;
 	bool m_CamExport = false;
@@ -3442,15 +3639,15 @@ public:
 	void CamExport_set(bool value) { m_CamExport = value;  }
 
     CAfxStreams() {
-        m_RecordScreen = new CRecordScreen(false, advancedfx::CRecordingSettings::GetDefault());        
+        // Add hidden record screen stream:
+        auto it = m_Streams.emplace("",advancedfx::CRecordingSettings::GetDefault());
+        it.first->second.Record = false;
     }
 
 	void ShutDown(void) {
         if(m_Shutdown) return;
         m_Shutdown = true;
-        RecordEnd();
-		delete m_RecordScreen;
-        m_RecordScreen = nullptr;
+        RecordEnd(false);
     }    
 
     ~CAfxStreams(){
@@ -3509,23 +3706,7 @@ public:
         m_OverrideFpsValue = value;
     }
 
-    // For the screen recording.
-    virtual void GetOutputPathValues(advancedfx::COutputPathValues& outValues) const {
-        outValues = m_OutputPathValues;
-        std::wstring screenName;
-        if (UTF8StringToWideString(m_RecordScreenName.c_str(), screenName)) outValues.SetString(advancedfx::OutputPathVariable_StreamName, screenName);
-        outValues.SetTemplate(advancedfx::OutputPathVariable_StreamPath, AFX_TAKE_PATH_TEMPLATE);
-    }
-
-	virtual advancedfx::StreamCaptureType GetCaptureType() const {
-        return m_StreamCaptureType;
-    }
-
-    virtual advancedfx::CGrowingBufferPoolThreadSafe * GetImageBufferPool() const {
-        return &g_ImageBufferPool;
-    }
-
-    virtual bool GetFormatBmpNotTga() const {        
+    bool GetFormatBmpNotTga() const {        
         return m_FormatBmpAndNotTga;
     }
 
@@ -3542,15 +3723,18 @@ public:
 
     void Console_Edit_RenderCommands(std::list<std::list<std::string>> & commands, advancedfx::ICommandArgs* args);
 
-    void RecordStart();
-    void RecordEnd();
+    void Console_Preview(advancedfx::ICommandArgs* args);
+    void Console_PreviewEnd();
+
+    void RecordStart(bool bPreview);
+    void RecordEnd(bool bPreview);
 
     bool GetRecording() { return m_Recording; }
 
     void EngineThread_Prepare() {
         m_ExtraPassesIterator = m_ExtraPasses.begin();
 
-        if (m_Recording) {
+        if (m_Recording || 0 != m_Preview.size()) {
             if (m_AutoForceFullReSmoke) {
                 if (!m_Restore_smoke_volume_lod_ratio_change) {
                     m_Old_smoke_volume_lod_ratio_change = Update_smoke_volume_lod_ratio_change(0.0f);
@@ -3582,24 +3766,27 @@ public:
     void EngineThread_BeginNextRenderPass() {
         m_LastExtraPassesIterator = m_ExtraPassesIterator;
 
+        bool bPreview = false;
         auto it = m_ExtraPassesIterator;
         while(it != m_ExtraPasses.end()) {
+            bPreview = bPreview || it->GetPreview();
             it->EngineThread_BeginFrame();
 
             auto last_it = it;
             it++;
             if(it == m_ExtraPasses.end()) break; // done.
-            if(last_it->CompareRenderPass(*it) != 0) break; // done for this render pass.
+            if(last_it->CompareRenderPassLess(*it)) break; // done for this render pass.
         }
 
         while(m_ExtraPassesIterator != m_ExtraPasses.end()) {
             auto last_it = m_ExtraPassesIterator;
             m_ExtraPassesIterator++;
             if(m_ExtraPassesIterator == m_ExtraPasses.end()) break; // done.
-            if(last_it->CompareRenderPass(*m_ExtraPassesIterator) != 0) break; // done for this render pass.
+            if(last_it->CompareRenderPassLess(*m_ExtraPassesIterator)) break; // done for this render pass.
         }
 
-        EngineThread_SetupPresent(false, true);
+        if(bPreview) EngineThread_SetupPreview(true);
+        EngineThread_SetupPresent(bPreview, !bPreview);
     }
 
     void EngineThread_EndNextRenderPass() {
@@ -3610,38 +3797,25 @@ public:
     }    
 
     void EngineThread_BeginMainRenderPass() {
+        bool bPreview = false;
         for(auto it = m_MainPass.begin(); it != m_MainPass.end(); it++) {
+            bPreview = bPreview || it->GetPreview();
             it->EngineThread_BeginFrame();
         }
 
-        if(m_Recording) {
-            auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
-
-            if(g_ActiveCapture) {
-                {
-                    auto & queue = pRenderPassCommands.BeforePresent;
-                    CAfxCapture * capture = g_ActiveCapture;
-                    queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
-                        capture->OnBeforeGpuPresent(pDeviceContext, pTexture, nullptr, nullptr, 1.0f, 0.0f, true);
-                    });
-                }
-                {
-                    auto & queue = pRenderPassCommands.AfterPresent;
-                    CAfxCapture * capture = g_ActiveCapture;
-                    queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
-                        capture->OnAfterGpuPresent(pDeviceContext);
-                    }); 
-                }
-            }
-        }
-        
-        EngineThread_SetupPresent(m_Recording,false);
+        if(bPreview) EngineThread_SetupPreview(true);
+     
+        EngineThread_SetupPresent(0 == m_Preview.size() && m_Recording || bPreview, 0 != m_Preview.size() && !bPreview);
     }
 
     void EngineThread_EndMainRenderPass() {
         for(auto it = m_MainPass.begin(); it != m_MainPass.end(); it++) {
             it->EngineThread_EndFrame();
         }
+    }
+
+    bool HasPreview() {
+        return 0 != m_Preview.size();
     }
 
 private:
@@ -3655,8 +3829,17 @@ private:
 
         virtual void GetOutputPathValues(advancedfx::COutputPathValues& outValues) const {
             outValues = m_Streams->m_OutputPathValues;
-            outValues.SetString(advancedfx::OutputPathVariable_StreamName, m_Settings.Name);
-            outValues.SetTemplate(advancedfx::OutputPathVariable_StreamPath, AFX_TAKE_PATH_TEMPLATE L"\\{STREAM_NAME}");
+
+            if(0 < m_Settings.Name.size()) {
+                // Normal stream.
+                outValues.SetString(advancedfx::OutputPathVariable_StreamName, m_Settings.Name);
+                outValues.SetTemplate(advancedfx::OutputPathVariable_StreamPath, AFX_TAKE_PATH_TEMPLATE L"\\{STREAM_NAME}");
+            } else {
+                // Our hidden screen recording sream.
+                std::wstring screenName;
+                if (UTF8StringToWideString(m_Streams->m_RecordScreenName.c_str(), screenName)) outValues.SetString(advancedfx::OutputPathVariable_StreamName, screenName);
+                outValues.SetTemplate(advancedfx::OutputPathVariable_StreamPath, AFX_TAKE_PATH_TEMPLATE);
+            }
         }
 
         virtual advancedfx::StreamCaptureType GetCaptureType() const {
@@ -3702,8 +3885,12 @@ private:
 
     class CStream : public CStreamOutput {
 	public:
-		CStream(CAfxStreams * streams, const CStreamSettings & settings)
-			: CStreamOutput(streams, settings) {
+		CStream(CAfxStreams * streams, const CStreamSettings & settings, bool bRecord, bool bPreview)
+			: CStreamOutput(streams, settings)
+        {
+            // Update late-determined settings:
+            m_Settings.Record = bRecord;
+            m_Settings.Preview = bPreview;
 
             CAfxCapture::CaptureType_e captureType;
             switch(m_Settings.CaptureType) {
@@ -3717,16 +3904,18 @@ private:
                 captureType = CAfxCapture::CaptureType_Default;
             };
 
-            auto videoStreamCreator = m_Settings.Settings->CreateOutVideoStreamCreator(
-                *this,
-                *this,
-                m_Streams->m_StartHostFrameRateValue
-            );
-            if(videoStreamCreator) {
-                m_Capture = new CAfxCapture(videoStreamCreator, captureType);
-                videoStreamCreator->Release();
-            } else {
-                advancedfx::Warning("AFXERROR: Failed to create output with recording setting \"%s\".\n", m_Settings.Settings->GetName());
+            if(bRecord) {
+                auto videoStreamCreator = m_Settings.Settings->CreateOutVideoStreamCreator(
+                    *this,
+                    *this,
+                    m_Streams->m_StartHostFrameRateValue
+                );
+                if(videoStreamCreator) {
+                    m_Capture = new CAfxCapture(videoStreamCreator, captureType);
+                    videoStreamCreator->Release();
+                } else {
+                    advancedfx::Warning("AFXERROR: Failed to create output with recording setting \"%s\".\n", m_Settings.Settings->GetName());
+                }
             }
 		}
 
@@ -3792,10 +3981,11 @@ private:
 
             // Setup capturing:
 
-            if(nullptr == m_Capture) return;
+            if(nullptr == m_Capture && !m_Settings.Preview) return;
 
             auto & renderPassCommands = g_RenderCommands.EngineThread_GetCommands();
             CAfxCapture * capture = m_Capture;
+            bool bPreview = m_Settings.Preview;
             CStreamSettings::CaptureType_e captureType = m_Settings.CaptureType;
             bool depthCompositeSmoke = m_Settings.DepthCompositeSmoke;
             bool depth24 = m_Settings.Depth24;
@@ -3808,7 +3998,7 @@ private:
             case CStreamSettings::CaptureType_e::DepthF:
                 {
                     auto &queue = renderPassCommands.AfterPostProcessing;
-                    queue.Push([capture,captureType,depthCompositeSmoke,depth24,depthVal,depthValMax,depthChannels,depthMode](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+                    queue.Push([capture,bPreview,captureType,depthCompositeSmoke,depth24,depthVal,depthValMax,depthChannels,depthMode](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
                         float zNear = depthVal;
                         float zFar = depthValMax;
 
@@ -3858,31 +4048,56 @@ private:
                         ID3D11DepthStencilView* pDepthStencilView = nullptr;
                         pDeviceContext->OMGetRenderTargets(1, nullptr, &pDepthStencilView);
         
-                        if (ID3D11Texture2D* pTexture = g_DepthCompositor.GetDepthTexture(captureType == CStreamSettings::CaptureType_e::DepthF ? CDepthCompositor::DepthTextureType_R32F : CDepthCompositor::DepthTextureType_RGB)) {
-                            capture->OnBeforeGpuPresent(pDeviceContext, pTexture, nullptr, nullptr, zFar - zNear, zNear, false);
-                            pTexture->Release();
+                        if (capture) {
+                            if (ID3D11Texture2D* pTexture = g_DepthCompositor.GetDepthTexture(captureType == CStreamSettings::CaptureType_e::DepthF ? CDepthCompositor::DepthTextureType_R32F : CDepthCompositor::DepthTextureType_RGB)) {
+                                capture->OnBeforeGpuPresent(pDeviceContext, pTexture, nullptr, nullptr, zFar - zNear, zNear, false);
+                                pTexture->Release();
+                            }
                         }
-                
-                        if (pDepthStencilView) pDepthStencilView->Release();             
+
+                        if (bPreview) {
+                            if (captureType == CStreamSettings::CaptureType_e::DepthF) {
+                                // R32F is not displayable as is, render a gray RGB version with the same settings:
+                                float previewZNear = depthVal;
+                                float previewZFar = depthValMax;
+                                g_DepthCompositor.CaptureNormalDepth(pDeviceContext, g_pCurrentDepthStencilView,
+                                    depthCompositeSmoke,
+                                    CDepthCompositor::DepthTextureType_RGB,
+                                    afxDepthMode,
+                                    ShaderCombo_afx_depth_ps_5_0::AFXD24_0,
+                                    previewZNear,
+                                    previewZFar
+                                );
+                            }
+                            if (ID3D11Texture2D* pPreviewTexture = g_DepthCompositor.GetDepthTexture(CDepthCompositor::DepthTextureType_RGB)) {
+                                D3D11_TEXTURE2D_DESC previewDesc;
+                                pPreviewTexture->GetDesc(&previewDesc);
+                                g_StreamPreview.Update(g_pDevice, pDeviceContext, pPreviewTexture, previewDesc.Width, previewDesc.Height);
+                                pPreviewTexture->Release();
+                            }
+                        }
+
+                        if (pDepthStencilView) pDepthStencilView->Release();
                     });
                 } break;
             default:
                 if(m_Settings.Capture == CStreamSettings::Capture_e::BeforeUi)
                 {
                     auto &queue = renderPassCommands.BeforeUiTexture;
-                    queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+                    queue.Push([capture,bPreview](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
                         UINT viewportWidth, viewportHeight;
                         GetViewportSize(pDeviceContext, viewportWidth, viewportHeight);
-                        capture->OnBeforeGpuPresent(pDeviceContext, pTexture, &viewportWidth, &viewportHeight, 1, 0, true);
+                        if(capture) capture->OnBeforeGpuPresent(pDeviceContext, pTexture, &viewportWidth, &viewportHeight, 1, 0, true);
+                        if(bPreview) g_StreamPreview.Update(g_pDevice, pDeviceContext, pTexture, viewportWidth, viewportHeight);
                     });
-                } else {
+                } else if(capture) { // beforePresent preview is done by presenting the pass.
                     auto & queue = renderPassCommands.BeforePresent;
                     queue.Push([capture](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
                         capture->OnBeforeGpuPresent(pDeviceContext, pTexture, nullptr, nullptr, 1.0f, 0.0f, true);
                     });
                 } break;
-            }            
-            {
+            }
+            if(capture) {
                 auto & queue = renderPassCommands.AfterPresent;
                 queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
                     capture->OnAfterGpuPresent(pDeviceContext);
@@ -3917,8 +4132,16 @@ private:
             return m_Settings.CanCaptureInMainPass();                
         }
 
-        int CompareRenderPass(const CStream & o) const {
-            return m_Settings.CompareRenderPass(o.m_Settings);
+        int CompareRenderPassLess(const CStream & o) const {
+            return m_Settings.CompareRenderPassLess(o.m_Settings);
+        }
+
+        bool GetPreview() const {
+            return m_Settings.Preview;
+        }
+
+        const CStreamSettings & GetSettings() const {
+            return m_Settings;
         }
 
     private:
@@ -4146,8 +4369,8 @@ private:
 	};
 
     struct RenderPassCompare {
-          bool operator() (const CStream & lhs, const CStream & rhs) const {
-            return lhs.CompareRenderPass(rhs) < 0;
+        bool operator() (const CStream & lhs, const CStream & rhs) const {
+            return lhs.CompareRenderPassLess(rhs);
         }
     };
 
@@ -4158,8 +4381,10 @@ private:
 
     std::map<std::string, CStreamSettings> m_Streams;
 
+    std::string m_Preview;
+    bool m_RecordingPreviewStream = false;
+
     bool m_Shutdown = false;
-    advancedfx::StreamCaptureType m_StreamCaptureType = advancedfx::StreamCaptureType::Normal;
     bool m_FormatBmpAndNotTga = false;
     bool m_StartMovieWav = true;
     bool m_OverrideFps = false;
@@ -4205,7 +4430,7 @@ private:
 			Settings->Release();
 		}
 	};
-	CRecordScreen* m_RecordScreen;
+
 	std::string m_RecordScreenName = "screen"; // {STREAM_NAME} of the screen recording.
 
     bool m_Recording = false;
@@ -4252,40 +4477,33 @@ private:
         return true;
     }
 
+    void EngineThread_SetupPreview(bool bAllowInTarget) {
+        auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+        pRenderPassCommands.BeginReliable.Push([bAllowInTarget](){
+            g_StreamPreview.SetAllowInTarget(bAllowInTarget);
+        });
+    }
+
     void EngineThread_SetupPresent(bool bForcePresent, bool bSuppressPresent) {
         auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
         {
             auto & queue = pRenderPassCommands.BeforePresent;
-            CAfxCapture * capture = g_ActiveCapture;
-            queue.Push([capture,bForcePresent,bSuppressPresent](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
+            queue.Push([bForcePresent,bSuppressPresent](ID3D11DeviceContext * pDeviceContext, ID3D11Texture2D * pTexture){
                 g_bExpectPresent = bForcePresent;
                 g_Present_Suppress = bSuppressPresent;
             }); 
         }
         {
             auto & queue = pRenderPassCommands.AfterPresent;
-            CAfxCapture * capture = g_ActiveCapture;
-            queue.Push([capture](ID3D11DeviceContext * pDeviceContext){
+            queue.Push([](ID3D11DeviceContext * pDeviceContext){
                 g_bExpectPresent = false;
             }); 
-        }        
+        }
     }
 } g_AfxStreams;
 
 void AfxStreams_ShutDown() {
     g_AfxStreams.ShutDown();
-}
-
-bool g_bEngine_Prepared = false;
-
-bool __fastcall New_CRenderDeviceBase_Present(
-    void * This, void * Rdx, void * R8d, void * R9d, void * Stack0, void * Stack1, void * Stack2, void * Stack3, void * Stack4) {
-
-    bool result = g_Old_CRenderDeviceBase_Present(This, Rdx, R8d, R9d, Stack0, Stack1, Stack2, Stack3, Stack4);
-
-    g_bEngine_Prepared = false;
-
-    return result;
 }
 
 void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
@@ -4297,7 +4515,7 @@ void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
 		char const* arg1 = args->ArgV(1);
 		if (0 == _stricmp(arg1, "enabled")) {
 			if (3 <= argC) {
-				m_RecordScreen->Enabled = 0 != atoi(args->ArgV(2));
+                m_Streams.find("")->second.Record = 0 != atoi(args->ArgV(2));
 				return;
 			}
 
@@ -4305,7 +4523,7 @@ void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
 				"%s enabled 0|1 - Disable (0, default) or enable (1) game screen recording.\n"
 				"Current value: %i\n"
 				, arg0
-				, (m_RecordScreen->Enabled?1:0)
+				, (m_Streams.find("")->second.Record?1:0)
 			);
 			return;
 		}
@@ -4317,8 +4535,8 @@ void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
 				if (advancedfx::CRecordingSettings* settings = advancedfx::CRecordingSettings::GetByName(arg2))
 				{
 					settings->AddRef();
-					m_RecordScreen->Settings->Release();
-					m_RecordScreen->Settings = settings;
+					m_Streams.find("")->second.Settings->Release();
+					m_Streams.find("")->second.Settings = settings;
 				}
 				else
 				{
@@ -4332,7 +4550,7 @@ void CAfxStreams::Console_RecordScreen(advancedfx::ICommandArgs* args) {
 				"%s settings <name> - Set recording settings to use from mirv_streams settings.\n"
 				"Current value: %s\n"
 				, arg0
-				, m_RecordScreen->Settings->GetName()
+				, m_Streams.find("")->second.Settings->GetName()
 			);
 
 			return;
@@ -4727,6 +4945,8 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
             return;            
         }
 
+        bool bUpdatePreview = !m_Recording && 0 != m_Preview.size() && it->first == m_Preview;
+
         auto &stream = it->second;
 
         if(3 <= argC) {
@@ -4751,9 +4971,11 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
 
                     if(0 == _stricmp("beforePresent", arg3)) {
                         stream.Capture = CStreamSettings::Capture_e::BeforePresent;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     } else if(0 == _stricmp("beforeUI", arg3)) {
                         stream.Capture = CStreamSettings::Capture_e::BeforeUi;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     }
                 }
@@ -4793,6 +5015,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                         advancedfx::Warning("AFXERROR: There is no recording setting named %s\n", arg3);
                     }
     
+                    if(bUpdatePreview) RecordStart(true);
                     return;
                 }
     
@@ -4810,26 +5033,32 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
 
                     if(0 == _stricmp("rgb", arg3)) {
                         stream.CaptureType = CStreamSettings::CaptureType_e::Rgb;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     } else if(0 == _stricmp("rgba", arg3)) {
                         stream.CaptureType = CStreamSettings::CaptureType_e::Rgba;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     } else if(0 == _stricmp("depthRgb", arg3)) {
                         stream.CaptureType = CStreamSettings::CaptureType_e::DepthRgb;
                         stream.Depth24 = false;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     } else if(0 == _stricmp("depth24", arg3)) {
                         stream.CaptureType = CStreamSettings::CaptureType_e::DepthRgb;
                         stream.Depth24 = true;
                         stream.DepthZip = false;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     } else if(0 == _stricmp("depthF", arg3)) {
                         stream.CaptureType = CStreamSettings::CaptureType_e::DepthF;
                         stream.DepthZip = false;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     } else if(0 == _stricmp("depthFZIP", arg3)) {
                         stream.CaptureType = CStreamSettings::CaptureType_e::DepthF;
                         stream.DepthZip = true;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     }
                 }
@@ -4879,6 +5108,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
             } else if(0 == _stricmp("depthCompositeSmoke", arg2)) {
                 if(4 <= argC) {
                     stream.DepthCompositeSmoke = 0 != atoi(args->ArgV(3));
+                    if(bUpdatePreview) RecordStart(true);
                     return;
                 }
 
@@ -4892,6 +5122,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
             } else if(0 == _stricmp("depthVal", arg2)) {
                 if(4 <= argC) {
                     stream.DepthVal = atof(args->ArgV(3));
+                    if(bUpdatePreview) RecordStart(true);
                     return;
                 }
 
@@ -4905,6 +5136,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
             } else if(0 == _stricmp("depthValMax", arg2)) {
                 if(4 <= argC) {
                     stream.DepthValMax = atof(args->ArgV(3));
+                    if(bUpdatePreview) RecordStart(true);
                     return;
                 }
 
@@ -4921,12 +5153,15 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
 
                     if(0 == _stricmp("gray", arg3)) {
                         stream.DepthChannels = CStreamSettings::DepthChannels_e::Gray;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     } else if(0 == _stricmp("splitRgb", arg3)) {
                         stream.DepthChannels = CStreamSettings::DepthChannels_e::SplitRgb;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     } else if(0 == _stricmp("dithered", arg3)) {
                         stream.DepthChannels = CStreamSettings::DepthChannels_e::Dithered;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     }
                 }
@@ -4960,18 +5195,23 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
 
                     if(0 == _stricmp("inverse", arg3)) {
                         stream.DepthMode = CStreamSettings::DepthMode_e::Inverse;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     } else if(0 == _stricmp("linear", arg3)) {
                         stream.DepthMode = CStreamSettings::DepthMode_e::Linear;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     } else if(0 == _stricmp("logE", arg3) || 0 == _stricmp("log", arg3)) {
                         stream.DepthMode = CStreamSettings::DepthMode_e::LogE;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     } else if(0 == _stricmp("pyramidalLinear", arg3)) {
                         stream.DepthMode = CStreamSettings::DepthMode_e::PyramidalLinear;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     } else if(0 == _stricmp("pyramidalLogE", arg3) || 0 == _stricmp("pyramidalLog", arg3)) {
                         stream.DepthMode = CStreamSettings::DepthMode_e::PyramidalLogE;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     }
                 }
@@ -5012,6 +5252,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                     if(4 == argC) {
                         if(0 == _stricmp("default", args->ArgV(3))) {
                             it->second.ClearOverride = false;
+                            if(bUpdatePreview) RecordStart(true);
                             return;
                         }
                     } else if(7 == argC) {
@@ -5025,6 +5266,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                         it->second.ClearOverrideColor.G = g;
                         it->second.ClearOverrideColor.B = b;
                         it->second.ClearOverrideColor.A = a;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     }
                 }
@@ -5048,6 +5290,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                     if(4 == argC) {
                         if(0 == _stricmp("none", args->ArgV(3))) {
                             it->second.ClearBeforeUi = false;
+                            if(bUpdatePreview) RecordStart(true);
                             return;
                         }
                     } else if(7 == argC) {
@@ -5061,6 +5304,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                         it->second.ClearBeforeUiColor.G = g;
                         it->second.ClearBeforeUiColor.B = b;
                         it->second.ClearBeforeUiColor.A = a;
+                        if(bUpdatePreview) RecordStart(true);
                         return;
                     }
                 }
@@ -5090,6 +5334,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
                     if(bChanged) {
                         advancedfx::Warning("AFXWarning: Value is globally shared and has been changed on other streams.\n");
                     }
+                    if(bUpdatePreview) RecordStart(true);
                     return;
                 }
 
@@ -5103,60 +5348,72 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
             } else if(0 == _stricmp("beforeCommands", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 g_AfxStreams.Console_Edit_RenderCommands(stream.BeforeCommands, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;            
             } else if(0 == _stricmp("afterCommands", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 g_AfxStreams.Console_Edit_RenderCommands(stream.AfterCommands, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;
             }
             else if(0 == _stricmp("viewModelAction", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 StreamSettingsActionSubCommand(stream.ViewModelAction, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;
             }
             else if(0 == _stricmp("particlesAction", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 StreamSettingsActionSubCommand(stream.ParticlesAction, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;
             }
             else if(0 == _stricmp("firstPersonLegsAction", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 StreamSettingsActionSubCommand(stream.FirstPersonLegsAction, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;
             }
             else if(0 == _stricmp("shellsAction", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 StreamSettingsActionSubCommand(stream.ShellsAction, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;
             }
             else if(0 == _stricmp("weaponsAction", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 StreamSettingsActionSubCommand(stream.WeaponsAction, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;
             }
             else if(0 == _stricmp("playersAction", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 StreamSettingsActionSubCommand(stream.PlayersAction, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;
             }
             else if(0 == _stricmp("worldAction", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 StreamSettingsActionSubCommand(stream.WorldAction, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;
             }
             else if(0 == _stricmp("skyAction", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 StreamSettingsActionSubCommand(stream.SkyAction, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;
             }
             else if(0 == _stricmp("smokeAction", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 StreamSettingsActionSubCommand(stream.SmokeAction, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;
             }
             else if(0 == _stricmp("overlaysAction", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 StreamSettingsActionSubCommand(stream.OverlaysAction, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;
             }
             else if(0 == _stricmp("scopeAction", arg2)) {
@@ -5275,16 +5532,73 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
 	);
 }
 
+void CAfxStreams::Console_Preview(advancedfx::ICommandArgs* args) {
+	int argC = args->ArgC();
+	char const* arg0 = args->ArgV(0);
+
+    if(2 <= argC) {
+        char const* arg1 = args->ArgV(1);
+
+        if(0 == strcmp("",arg1)) {
+            Console_PreviewEnd();
+            return;
+        }
+
+        if(m_Recording) {
+            advancedfx::Warning("AFXERROR: can not be changed during recording.");
+            return;
+        }
+
+        auto it = m_Streams.find(arg1);
+
+        if(it == m_Streams.end()) {
+            advancedfx::Warning("AFXERROR: No stream named \"%s\" exists.\n", arg1);
+            return;
+        }
+
+        Console_PreviewEnd();
+        m_Preview = arg1;
+        RecordStart(true);
+		return;
+    }
+
+	advancedfx::Message(
+		"%s <sUniqueStreamName> - Preview stream with given name or \"\" to end preview.\n"
+		, arg0
+	);
+}
+
+void CAfxStreams::Console_PreviewEnd() {
+    if(m_Recording) {
+        advancedfx::Warning("AFXERROR: can not be changed during recording.");
+        return;
+    }
+
+    if(m_Preview.size()) {
+        m_Preview.clear();
+        RecordEnd(true);
+    }
+}
 
 void CAfxStreams::Console_Print() {
 	advancedfx::Message(
 		"============================================================\n"
 		"name (recording preset)\n"
 	);
+    
+    std::wstring previewName;
+    if(m_Preview.size()) AnsiStringToWideString(m_Preview.c_str(),previewName);
+
 	std::list<std::map<std::string,CStreamSettings>::iterator> streams[3];
 	int index = 0;
 	for (auto it = m_Streams.begin(); it != m_Streams.end(); it++)
 	{
+        // Exclude secret record screen stream.
+        if(0 == it->second.Name.size()) continue;
+
+        if(previewName.size() && 0 == it->second.Name.compare(previewName))
+			streams[0].emplace_back(it);
+
 		if(it->second.Record)
 			streams[1].emplace_back(it);
 		else
@@ -5312,11 +5626,7 @@ void CAfxStreams::Console_Print() {
 			if(advancedfx::CRecordingSettings * setting =  (*it)->second.Settings) {
 				settingName = setting->GetName();
 			}
-			/*if(i == 0 && streams[i].size() > 1 || it->PreviewSlot > 0) {
-				Tier0_Msg("%i: %s (%s) @%i\n", it->Index, streamName, settingName, it->PreviewSlot);
-			} else*/ {
-				advancedfx::Message("%s (%s)\n", streamName, settingName);
-			}
+			advancedfx::Message("%s (%s)\n", streamName, settingName);
 		}
 	}
 
@@ -5341,6 +5651,7 @@ void CAfxStreams::Console_Remove(advancedfx::ICommandArgs* args) {
             return;            
         }
 
+        if(m_Preview == it->first) Console_PreviewEnd();
         m_Streams.erase(it);
         return;
     }
@@ -5396,8 +5707,6 @@ bool CAfxStreams::InitOutputPathValues()
 	if(m_CamExport) addTemplate(m_CamPath);
 	if(m_StartMovieWav) addTemplate(m_StartMovieWavPath);
 
-	if(m_RecordScreen->Enabled) m_RecordScreen->Settings->GetOutputPathTemplates(*this, templates);
-
 	for(auto it = m_Streams.begin(); it != m_Streams.end(); it++) {
 		if(!it->second.Record) continue;
 		CStreamOutput streamOutput(this, it->second);
@@ -5424,217 +5733,229 @@ bool CAfxStreams::InitOutputPathValues()
 	return true;
 }
 
-void CAfxStreams::RecordStart()
+void CAfxStreams::RecordStart(bool bPreview)
 {
-	RecordEnd();
+	RecordEnd(bPreview);
 
-	advancedfx::Message("Starting recording ... ");
+    m_AutoForceFullReSmoke = false;
+    m_CompositeSmoke = false;
+    
+    if(!bPreview) {
+        advancedfx::Message("Starting recording ... ");
 
-	if(InitOutputPathValues())
-	{
-		m_Recording = true;
-		m_StartMovieWavUsed = false;
+        if(InitOutputPathValues())
+        {
+            m_Recording = true;
+            m_StartMovieWavUsed = false;
 
-		std::string utf8TakeDir;
-		bool utf8TakeDirOk = WideStringToUTF8String(m_TakeDir.c_str(), utf8TakeDir);
-        SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
-        SOURCESDK::CS2::Cvar_s * handle_engine_no_focus_sleep = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("engine_no_focus_sleep", false).Get());
-        SOURCESDK::CS2::Cvar_s * handle_r_always_render_all_windows = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_always_render_all_windows", false).Get());
-        SOURCESDK::CS2::Cvar_s * handle_r_wait_on_present = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_wait_on_present", false).Get());
-        
-        m_UsedHostFramerRateValue = GetOverrideFps();
+            std::string utf8TakeDir;
+            bool utf8TakeDirOk = WideStringToUTF8String(m_TakeDir.c_str(), utf8TakeDir);
+            SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
+            SOURCESDK::CS2::Cvar_s * handle_engine_no_focus_sleep = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("engine_no_focus_sleep", false).Get());
+            SOURCESDK::CS2::Cvar_s * handle_r_always_render_all_windows = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_always_render_all_windows", false).Get());
+            SOURCESDK::CS2::Cvar_s * handle_r_wait_on_present = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_wait_on_present", false).Get());
 
-        if(m_UsedHostFramerRateValue && handle_host_framerate) {
-            m_OldValue_host_framerate = handle_host_framerate->m_Value.m_flValue;
-            handle_host_framerate->m_Value.m_flValue = GetOverrideFpsValue();
-        }
+            m_UsedHostFramerRateValue = GetOverrideFps();
 
-        if(handle_engine_no_focus_sleep) {
-            m_OldValue_engine_no_focus_sleep = handle_engine_no_focus_sleep->m_Value.m_i32Value;
-            handle_engine_no_focus_sleep->m_Value.m_i32Value = 0;
-        }
-
-        if(handle_r_always_render_all_windows) {
-            m_OldValue_r_always_render_all_windows = handle_r_always_render_all_windows->m_Value.m_bValue;
-            handle_r_always_render_all_windows->m_Value.m_bValue = true;
-        }
-
-        if(handle_r_wait_on_present) {
-            m_OldValue_r_wait_on_present = handle_r_wait_on_present->m_Value.m_bValue;
-            handle_r_wait_on_present->m_Value.m_bValue = true;            
-        }
-
-		float host_framerate = m_OverrideFps ? m_OverrideFpsValue : (handle_host_framerate != nullptr ? handle_host_framerate->m_Value.m_flValue : 0);
-		double frameTime;
-		if (1.0 <= host_framerate) {
-			m_StartHostFrameRateValue = host_framerate;
-			frameTime = 1.0 / host_framerate;
-		}
-		else {
-			m_StartHostFrameRateValue = host_framerate ? 1.0f / host_framerate : 0.0f;
-			frameTime = host_framerate;
-		}
-
-		if (0 == frameTime) {
-			advancedfx::Warning("You probably forgot to set host_framerate to the FPS you want to record.\n");
-			if (nullptr == handle_host_framerate) {
-				advancedfx::Warning("You probably forgot to set mirv_streams record fps to the FPS you want to record.\n");
-			}
-		}
-
-		if(m_CampathAutoSave && 0 < g_CamPath.GetSize())
-		{
-			std::wstring campathFileName;
-			if(!(ExpandRecordOutputPath(m_CampathPath, campathFileName)
-				&& CreateParentPath(campathFileName.c_str())
-				&& g_CamPath.Save(campathFileName.c_str())))
-				advancedfx::Warning("Error: Failed saving campath to \"%s\".\n", m_CampathPath.Get().c_str());
-		}
-
-		if (m_CamExport)
-		{
-			std::wstring camFileName;
-			if(ExpandRecordOutputPath(m_CamPath, camFileName) && CreateParentPath(camFileName.c_str())) {
-				m_CamExportSet = true;
-				g_S2CamIO.SetCamExport(new CamExport(camFileName.c_str()));
-			}
-			else advancedfx::Warning("Error: Failed to create folder for cam export \"%s\".\n", m_CamPath.Get().c_str());
-		}
-
-		if(m_RecordScreen->Enabled) {
-            auto videoStreamCreator = m_RecordScreen->Settings->CreateOutVideoStreamCreator(
-                *this,
-                *this,
-                m_StartHostFrameRateValue
-            );
-			if(videoStreamCreator) {
-				CreateCapture(videoStreamCreator);
-				videoStreamCreator->Release();
-			}
-			else advancedfx::Warning("AFXERROR: Failed to create output for screen recording.\n");
-		}
-
-        m_AutoForceFullReSmoke = false;
-        m_CompositeSmoke = false;
-
-        for(auto it = m_Streams.begin(); it != m_Streams.end(); it++) {
-            if(!it->second.Record) continue;
-            m_CompositeSmoke = m_CompositeSmoke || it->second.WantsSmokeComposite();
-            m_AutoForceFullReSmoke = m_AutoForceFullReSmoke || it->second.WantsFullResSmoke();
-
-            if(it->second.CanCaptureInMainPass())
-                m_MainPass.emplace_back(this, it->second);
-            else
-                m_ExtraPasses.emplace(this, it->second);
-        }
-
-        if (m_CompositeSmoke) {
-            auto& pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
-            {
-                auto& queue = pRenderPassCommands.BeginReliable;
-                queue.Push([]() {
-                    g_bCompositeSmoke = true;
-                });
+            if(m_UsedHostFramerRateValue && handle_host_framerate) {
+                m_OldValue_host_framerate = handle_host_framerate->m_Value.m_flValue;
+                handle_host_framerate->m_Value.m_flValue = GetOverrideFpsValue();
             }
+
+            if(handle_engine_no_focus_sleep) {
+                m_OldValue_engine_no_focus_sleep = handle_engine_no_focus_sleep->m_Value.m_i32Value;
+                handle_engine_no_focus_sleep->m_Value.m_i32Value = 0;
+            }
+
+            if(handle_r_always_render_all_windows) {
+                m_OldValue_r_always_render_all_windows = handle_r_always_render_all_windows->m_Value.m_bValue;
+                handle_r_always_render_all_windows->m_Value.m_bValue = true;
+            }
+
+            if(handle_r_wait_on_present) {
+                m_OldValue_r_wait_on_present = handle_r_wait_on_present->m_Value.m_bValue;
+                handle_r_wait_on_present->m_Value.m_bValue = true;            
+            }
+
+            float host_framerate = m_OverrideFps ? m_OverrideFpsValue : (handle_host_framerate != nullptr ? handle_host_framerate->m_Value.m_flValue : 0);
+            double frameTime;
+            if (1.0 <= host_framerate) {
+                m_StartHostFrameRateValue = host_framerate;
+                frameTime = 1.0 / host_framerate;
+            }
+            else {
+                m_StartHostFrameRateValue = host_framerate ? 1.0f / host_framerate : 0.0f;
+                frameTime = host_framerate;
+            }
+
+            if (0 == frameTime) {
+                advancedfx::Warning("You probably forgot to set host_framerate to the FPS you want to record.\n");
+                if (nullptr == handle_host_framerate) {
+                    advancedfx::Warning("You probably forgot to set mirv_streams record fps to the FPS you want to record.\n");
+                }
+            }
+
+            if(m_CampathAutoSave && 0 < g_CamPath.GetSize())
+            {
+                std::wstring campathFileName;
+                if(!(ExpandRecordOutputPath(m_CampathPath, campathFileName)
+                    && CreateParentPath(campathFileName.c_str())
+                    && g_CamPath.Save(campathFileName.c_str())))
+                    advancedfx::Warning("Error: Failed saving campath to \"%s\".\n", m_CampathPath.Get().c_str());
+            }
+
+            if (m_CamExport)
+            {
+                std::wstring camFileName;
+                if(ExpandRecordOutputPath(m_CamPath, camFileName) && CreateParentPath(camFileName.c_str())) {
+                    m_CamExportSet = true;
+                    g_S2CamIO.SetCamExport(new CamExport(camFileName.c_str()));
+                }
+                else advancedfx::Warning("Error: Failed to create folder for cam export \"%s\".\n", m_CamPath.Get().c_str());
+            }
+
+            for(auto it = m_Streams.begin(); it != m_Streams.end(); it++) {
+                if(!it->second.Record) continue;
+
+                bool bPreview = it->first == m_Preview;
+                m_RecordingPreviewStream = m_RecordingPreviewStream || bPreview;
+
+                m_CompositeSmoke = m_CompositeSmoke || it->second.WantsSmokeComposite();
+                m_AutoForceFullReSmoke = m_AutoForceFullReSmoke || it->second.WantsFullResSmoke();
+
+                if(
+                    it->second.CanCaptureInMainPass()
+
+                    // Only if we can chain them into the same pass:
+                    // Might be not possible e.g. due to early preview.
+                    && (
+                        m_MainPass.rbegin() == m_MainPass.rend()
+                        ||  !(m_MainPass.rbegin()->GetSettings().CompareRenderPassLess(it->second))
+                    )
+                )
+                    m_MainPass.emplace_back(this, it->second, true, bPreview);
+                else
+                    m_ExtraPasses.emplace(this, it->second, true, bPreview);
+            }
+
+            advancedfx::Message("done.\n");
+
+            advancedfx::Message("Recording to \"%s\".\n", utf8TakeDirOk ? utf8TakeDir.c_str() : "?");
+
+            m_StartMovieWavUsed = m_StartMovieWav;
+
+            if (m_StartMovieWavUsed)
+            {
+                // Picked up by the file hooks on the engine's audio thread:
+                std::wstring startMovieWavPath;
+                if(ExpandRecordOutputPath(m_StartMovieWavPath, startMovieWavPath)) AfxStreams_SetStartMovieWavPath(startMovieWavPath);
+
+                SOURCESDK::CS2::ConCommandHandle handle_startmovie = SOURCESDK::CS2::g_pCVar->FindCommand( "startmovie", false );
+                if(handle_startmovie.IsValid()) {
+                    const char * pszArgs[3] = {"startmovie",ADVANCEDFX_STARTMOVIE_WAV_KEY,"wav"};
+                    SOURCESDK::CS2::g_pCVar->DispatchConCommand(handle_startmovie, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(3,pszArgs));
+                } else advancedfx::Warning("AFXERROR: startmovie command not found, wav recording not possible.");
+            }
+
+            AfxHookSourceRs_Engine_OnRecordStart(utf8TakeDirOk ? utf8TakeDir.c_str() : nullptr);
         }
+        else
+        {
+            advancedfx::Message("FAILED");
+            advancedfx::Warning("Error: Failed to determine output paths for record name \"%s\" and take \"%s\".\n", m_RecordName.c_str(), m_Take.c_str());
+        }
+    }
 
-		advancedfx::Message("done.\n");
+    if(!m_RecordingPreviewStream && m_Preview.size()) {
+        auto & streamSettings = m_Streams.find(m_Preview)->second;
 
-		advancedfx::Message("Recording to \"%s\".\n", utf8TakeDirOk ? utf8TakeDir.c_str() : "?");
+        m_CompositeSmoke = m_CompositeSmoke || streamSettings.WantsSmokeComposite();
+        m_AutoForceFullReSmoke = m_AutoForceFullReSmoke || streamSettings.WantsFullResSmoke();
 
-		m_StartMovieWavUsed = m_StartMovieWav;
+        if(streamSettings.CanCaptureInMainPass())
+            m_MainPass.emplace_back(this, streamSettings, false, true);
+        else
+            m_ExtraPasses.emplace(this, streamSettings, false, true);
+    }
 
-		if (m_StartMovieWavUsed)
-		{
-			// Picked up by the file hooks on the engine's audio thread:
-			std::wstring startMovieWavPath;
-			if(ExpandRecordOutputPath(m_StartMovieWavPath, startMovieWavPath)) AfxStreams_SetStartMovieWavPath(startMovieWavPath);
-
-            SOURCESDK::CS2::ConCommandHandle handle_startmovie = SOURCESDK::CS2::g_pCVar->FindCommand( "startmovie", false );
-            if(handle_startmovie.IsValid()) {
-                const char * pszArgs[3] = {"startmovie",ADVANCEDFX_STARTMOVIE_WAV_KEY,"wav"};
-                SOURCESDK::CS2::g_pCVar->DispatchConCommand(handle_startmovie, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(3,pszArgs));
-            } else advancedfx::Warning("AFXERROR: startmovie command not found, wav recording not possible.");
-		}
-
-        AfxHookSourceRs_Engine_OnRecordStart(utf8TakeDirOk ? utf8TakeDir.c_str() : nullptr);
-	}
-	else
-	{
-		advancedfx::Message("FAILED");
-		advancedfx::Warning("Error: Failed to determine output paths for record name \"%s\" and take \"%s\".\n", m_RecordName.c_str(), m_Take.c_str());
-	}
-
+    if (m_CompositeSmoke) {
+        auto& pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+        {
+            auto& queue = pRenderPassCommands.BeginReliable;
+            queue.Push([]() {
+                g_bCompositeSmoke = true;
+            });
+        }
+    }
 }
 
 
 void AfxHookSourceRs_Engine_OnRecordEnd();
 
-void CAfxStreams::RecordEnd()
+void CAfxStreams::RecordEnd(bool bPreview)
 {
-	if(m_Recording)
-	{
-        AfxHookSourceRs_Engine_OnRecordEnd();
+    if(!bPreview) {
+        if(m_Recording)
+        {
+            AfxHookSourceRs_Engine_OnRecordEnd();
 
-		advancedfx::Message("Finishing recording ... ");
-		if (m_StartMovieWavUsed)
-		{
-            SOURCESDK::CS2::ConCommandHandle handle_endmovie = SOURCESDK::CS2::g_pCVar->FindCommand( "endmovie", false );
-            if(handle_endmovie.IsValid()) {
-                const char * pszArgs[1] = {"endmovie"};
-                SOURCESDK::CS2::g_pCVar->DispatchConCommand(handle_endmovie, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(1,pszArgs));
-            } else advancedfx::Warning("AFXERROR: endmovie command not found, stopping the wav recording not possible.");
-
-		}
-
-		if(m_CamExportSet) {
-			m_CamExportSet = false;
-			g_S2CamIO.SetCamExport(nullptr);
-		}
-
-        m_ExtraPasses.clear();
-        m_MainPass.clear();
-
-        if(m_RecordScreen->Enabled) {
-            EndCapture();
-        }
-
-        if(m_CompositeSmoke) {
-            auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+            advancedfx::Message("Finishing recording ... ");
+            if (m_StartMovieWavUsed)
             {
-                auto & queue = pRenderPassCommands.FinalizeReliable;
-                queue.Push([](){
-                    g_bCompositeSmoke = false;
-                }); 
+                SOURCESDK::CS2::ConCommandHandle handle_endmovie = SOURCESDK::CS2::g_pCVar->FindCommand( "endmovie", false );
+                if(handle_endmovie.IsValid()) {
+                    const char * pszArgs[1] = {"endmovie"};
+                    SOURCESDK::CS2::g_pCVar->DispatchConCommand(handle_endmovie, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(1,pszArgs));
+                } else advancedfx::Warning("AFXERROR: endmovie command not found, stopping the wav recording not possible.");
+
             }
-            m_CompositeSmoke = false;
+
+            if(m_CamExportSet) {
+                m_CamExportSet = false;
+                g_S2CamIO.SetCamExport(nullptr);
+            }
+
+            SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
+            SOURCESDK::CS2::Cvar_s * handle_engine_no_focus_sleep = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("engine_no_focus_sleep", false).Get());
+            SOURCESDK::CS2::Cvar_s * handle_r_always_render_all_windows = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_always_render_all_windows", false).Get());
+            SOURCESDK::CS2::Cvar_s * handle_r_wait_on_present = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_wait_on_present", false).Get());
+
+            if(m_UsedHostFramerRateValue && handle_host_framerate) {
+                handle_host_framerate->m_Value.m_flValue = m_OldValue_host_framerate;
+            }
+
+            if(handle_r_wait_on_present) {
+                handle_r_wait_on_present->m_Value.m_bValue = m_OldValue_r_wait_on_present;
+            }
+
+            if(handle_engine_no_focus_sleep) {
+                handle_engine_no_focus_sleep->m_Value.m_i32Value = m_OldValue_engine_no_focus_sleep;
+            }
+
+            if(handle_r_always_render_all_windows) {
+                handle_r_always_render_all_windows->m_Value.m_bValue = m_OldValue_r_always_render_all_windows;
+            }
+
+            advancedfx::Message("done.\n");
         }
 
-        SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
-        SOURCESDK::CS2::Cvar_s * handle_engine_no_focus_sleep = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("engine_no_focus_sleep", false).Get());
-        SOURCESDK::CS2::Cvar_s * handle_r_always_render_all_windows = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_always_render_all_windows", false).Get());
-        SOURCESDK::CS2::Cvar_s * handle_r_wait_on_present = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_wait_on_present", false).Get());
-
-        if(m_UsedHostFramerRateValue && handle_host_framerate) {
-            handle_host_framerate->m_Value.m_flValue = m_OldValue_host_framerate;
+    	m_Recording = false;
+    }
+    if(m_CompositeSmoke) {
+        auto & pRenderPassCommands = g_RenderCommands.EngineThread_GetCommands();
+        {
+            auto & queue = pRenderPassCommands.FinalizeReliable;
+            queue.Push([](){
+                g_bCompositeSmoke = false;
+            }); 
         }
+        m_CompositeSmoke = false;
+    }
 
-        if(handle_r_wait_on_present) {
-            handle_r_wait_on_present->m_Value.m_bValue = m_OldValue_r_wait_on_present;
-        }
+    m_ExtraPasses.clear();
+    m_MainPass.clear();
 
-        if(handle_engine_no_focus_sleep) {
-            handle_engine_no_focus_sleep->m_Value.m_i32Value = m_OldValue_engine_no_focus_sleep;
-        }
-
-        if(handle_r_always_render_all_windows) {
-            handle_r_always_render_all_windows->m_Value.m_bValue = m_OldValue_r_always_render_all_windows;
-        }
-
-    	advancedfx::Message("done.\n");
-	}
-
-	m_Recording = false;
+    m_RecordingPreviewStream = false;
 }
 
 bool AfxStreams_IsRcording() {
@@ -5724,7 +6045,16 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
             g_AfxStreams.Console_Print();
             return;
 
-        }          
+        }
+        else if(0 == _stricmp(cmd1, "preview")) {
+            advancedfx::CSubCommandArgs subArgs(args, 2);
+            g_AfxStreams.Console_Preview(&subArgs);
+            return;
+        }
+        else if(0 == _stricmp(cmd1, "previewEnd")) {
+            g_AfxStreams.Console_PreviewEnd();
+            return;
+        }
         else if(0 == _stricmp(cmd1, "record"))
 		{
 			if(3 <= argC)
@@ -5766,13 +6096,14 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 				else
 				if(!_stricmp(cmd2, "start"))
 				{
-					g_AfxStreams.RecordStart();
+					g_AfxStreams.RecordStart(false);
 					return;
 				}
 				else
 				if(!_stricmp(cmd2, "end"))
 				{
-					g_AfxStreams.RecordEnd();
+					g_AfxStreams.RecordEnd(false);
+                    if(g_AfxStreams.HasPreview()) g_AfxStreams.RecordStart(true);
 					return;
 				}
 				else
@@ -5961,6 +6292,8 @@ CON_COMMAND(mirv_streams, "Access to streams system.")
 		"mirv_streams edit [...] - Edit a stream.\n"
 		"mirv_streams remove [...] - Edit a stream.\n"
 		"mirv_streams print - Print current streams.\n"
+		"mirv_streams preview [...] - Preview a stream.\n"
+		"mirv_streams previewEnd - End stream preview.\n"
 	);
 
 
