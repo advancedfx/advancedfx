@@ -184,7 +184,7 @@ void CEntMatPicker::Print_Locked(const DescribeHandle_t& describeHandle) const {
 		else {
 			std::string description;
 			if (describeHandle) description = describeHandle(it->first);
-			advancedfx::Message("\"handle=%u\" %s%s(%s)\n", it->first, description.c_str(), description.empty() ? "" : " ", state);
+			advancedfx::Message("handle=%u %s%s(%s)\n", it->first, description.c_str(), description.empty() ? "" : " ", state);
 		}
 	}
 	advancedfx::Message("---- END ----\n");

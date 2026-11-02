@@ -19,6 +19,7 @@
 #include "../deps/release/Detours/src/detours.h"
 
 #include <map>
+#include <unordered_set>
 #include <algorithm>
 
 void ** g_pEntityList = nullptr;
@@ -210,6 +211,45 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetHandle() {
 	}
 
 	return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+}
+
+SOURCESDK::CS2::CBaseHandle CEntityInstance::GetParentHandle() {
+	auto defaultHandle = SOURCESDK::CS2::CEntityHandle::CEntityHandle();
+
+	auto pGameSceneNode = *(u_char**)((u_char*)this + g_clientDllOffsets.C_BaseEntity.m_pGameSceneNode);
+	if (!pGameSceneNode) return defaultHandle;
+
+	auto pParent = *(u_char**)(pGameSceneNode + g_clientDllOffsets.CGameSceneNode.m_pParent);
+	if (!pParent) return defaultHandle;
+
+	auto pOwner = *(CEntityInstance**)(pParent + g_clientDllOffsets.CGameSceneNode.m_pOwner);
+	if (!pOwner) return defaultHandle;
+
+	return pOwner->GetHandle();
+}
+
+SOURCESDK::CS2::CBaseHandle CEntityInstance::GetRootHandle() {
+	auto lastHandle = this->GetHandle();
+	auto lastEntity = this;
+	if (!lastHandle.IsValid()) return lastHandle;
+
+	std::unordered_set<CEntityInstance*> entities {this};
+
+	while (true) {
+		auto parentHandle = lastEntity->GetParentHandle();
+		if (!parentHandle.IsValid()) break;
+
+		auto parentEntity = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,parentHandle.GetEntryIndex());
+		if (!parentEntity) break;
+		if (parentEntity->GetHandle() != parentHandle) break;
+
+		if (!entities.insert(parentEntity).second) break;
+
+		lastEntity = parentEntity;
+		lastHandle = parentHandle;
+	}
+
+	return lastHandle;
 }
 
 typedef	void (__fastcall * org_LookupAttachment_t)(void* This, uint8_t& outIdx, const char* attachmentName);

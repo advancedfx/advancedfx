@@ -870,9 +870,9 @@ static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterCla
 	return ApplyLayerAwarePolicy(filterClass, context, materialName, GetSceneObjectClassPolicy(filterClass));
 }
 
-static uint32_t GetSceneDataEntityHandle(const CBaseSceneData* pSceneData) {
-	if (nullptr == pSceneData || nullptr == pSceneData->sceneObject) return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
-	return *(uint32_t*)((unsigned char*)pSceneData->sceneObject + g_SceneObject_pCBaseHandle_Offset);
+static SOURCESDK::CS2::CBaseHandle GetSceneDataEntityHandle(const CBaseSceneData* pSceneData) {
+	if (nullptr == pSceneData || nullptr == pSceneData->sceneObject) return SOURCESDK::CS2::CBaseHandle();
+	return SOURCESDK::CS2::CBaseHandle(*(uint32_t*)((unsigned char*)pSceneData->sceneObject + g_SceneObject_pCBaseHandle_Offset));
 }
 
 // Picker (mirv_streams picker ...), takes precedence over everything else.
@@ -880,13 +880,14 @@ static bool GetPickerHidden(const CBaseSceneData* pSceneData) {
 	if (!g_ScenePicker.IsActive()) return false;
 
 	const char* materialName = pSceneData && pSceneData->material ? pSceneData->material->GetName() : nullptr;
-	return g_ScenePicker.GetHidden(materialName, GetSceneDataEntityHandle(pSceneData));
+	return g_ScenePicker.GetHidden(materialName, (uint32_t)(GetSceneDataEntityHandle(pSceneData).ToInt()));
 }
 
 // Action filter of the stream (mirv_streams edit <name> actionFilter ...), takes precedence over everything else except the picker.
 static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBaseSceneData* pSceneData, SceneObjectDrawPolicy& outPolicy) {
 	if (!g_ActiveActionFilter.IsActive()) return false;
 
+	std::string className;
 	std::string materialName;
 	std::string viewName;
 	std::string viewPass;
@@ -900,8 +901,20 @@ static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBa
 				query.MaterialName = &materialName;
 			}
 		}
-		uint32_t handle = GetSceneDataEntityHandle(pSceneData);
-		if (handle != SOURCESDK_CS2_INVALID_EHANDLE_INDEX) query.EntityHandle = handle;
+		auto handle = GetSceneDataEntityHandle(pSceneData);
+		if (handle.IsValid()) {
+			query.EntityHandle = (uint32_t)(handle.ToInt());
+			if (auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,handle.GetEntryIndex())) {
+				auto parentHandle = ent->GetParentHandle();
+				if (parentHandle.IsValid()) query.ParentEntityHandle = (uint32_t)(parentHandle.ToInt());
+
+				auto rootHandle = ent->GetRootHandle();
+				if (rootHandle.IsValid()) query.RootEntityHandle = (uint32_t)(rootHandle.ToInt());
+
+				className = ent->GetClassName();
+				query.className = &className;
+			}
+		} 
 	}
 	if (context.ViewName) {
 		viewName = context.ViewName;
@@ -1521,10 +1534,20 @@ static std::string DescribeEntityHandle(uint32_t handle) {
 	auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList, entityHandle.GetEntryIndex());
 	if (nullptr == ent || ent->GetHandle().ToInt() != entityHandle.ToInt()) return std::string();
 
+	auto rootHandle = ent->GetRootHandle();
+	auto parentHandle = ent->GetParentHandle();
 	const char* className = ent->GetClassName();
-	std::string result = "(className=";
+
+	std::string result = "";
+	result += "parentHandle=";
+	result += parentHandle.IsValid() ? std::to_string(parentHandle.ToInt()) : "?";
+	result += " ";
+	result += "rootHandle=";
+	result += rootHandle.IsValid() ? std::to_string(rootHandle.ToInt()) : "?";
+	result += " ";
+	result += "\"className=";
 	result += className ? className : "?";
-	result += ")";
+	result += "\"";
 	return result;
 }
 
