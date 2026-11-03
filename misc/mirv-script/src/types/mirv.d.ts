@@ -702,25 +702,25 @@ declare namespace mirv {
 	/**
 	 * Since HLAE 2.190.0.
 	 */
-	const events = {
-		recordStart: AdvancefxMirv.Events.RecordStart,
+	const events: {
+		recordStart: AdvancedfxMirv.Events.RecordStart;
 
-		recordEnd: AdvancedfxMirv.Events.RecordEnd,
+		recordEnd: AdvancedfxMirv.Events.RecordEnd;
 
-		gameEvent: AdvancedfxMirv.Events.GameEvent,
+		gameEvent: AdvancedfxMirv.Events.GameEvent;
 
-		cViewRenderSetupView: AdvancedfxMirv.Events.CViewRenderSetupView,
+		cViewRenderSetupView: AdvancedfxMirv.Events.CViewRenderSetupView;
 
-		clientFrameStageNotify: AdvancedfxMirv.Events.ClientFrameStageNotify,
+		clientFrameStageNotify: AdvancedfxMirv.Events.ClientFrameStageNotify;
 
 		/**
 		 * Called after an entity has been added.
 		 */
-		addEntity: AdvancedfxMirv.Events.AddEntity,
+		addEntity: AdvancedfxMirv.Events.AddEntity;
 
 		/**
 		 * Called before an entity is removed.
 		 */
-		removeEntity: AdvancedfxMirv.Events.RemoveEntity
+		removeEntity: AdvancedfxMirv.Events.RemoveEntity;
 	};
 }
