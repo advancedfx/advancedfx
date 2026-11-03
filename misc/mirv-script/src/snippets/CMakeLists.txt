@@ -9,6 +9,7 @@ set(AFXHOOKSOURCE2SNIPPETS_NAMES
 	mirv_script_spec_lock
     mirv_script_view
     mirv_script_voice
+	mirv_script_record_name
     tests/observer-test
     tests/attachment-test
 	tests/cvars-test
