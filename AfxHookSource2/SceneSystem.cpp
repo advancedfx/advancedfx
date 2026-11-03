@@ -1852,6 +1852,12 @@ void FUN_18009c880(longlong param_1,longlong param_2)
 	//g_SceneData_Flags_Offset = 0x62;
 
 	// Found by looking for known index values (e.g. of C4 model) in the lower 15 bit or the full handle would work too (32 bit):
+	// Also 8b 80 ?? ?? 00 00 8b c8 81 e1 ff 7f 00 00 83 f8 ff
+	// a little above "%ix%i %s:%i (%d)" with " [RE-RENDER: different object flags requested]"
+	// see following
+	// if (*(uint *)(*plVar27 + 0xc0) != 0xffffffff) {
+	//     uVar13 = *(uint *)(*plVar27 + 0xc0) & 0x7fff;
+	// }
 	g_SceneObject_pCBaseHandle_Offset = 0xC0;
 
 	if(//org_RenderLayerDrawListPart &&
