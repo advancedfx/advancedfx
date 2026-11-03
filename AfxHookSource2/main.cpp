@@ -2125,6 +2125,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 		g_h_engine2Dll = hModule;
 
 		Addresses_InitEngine2Dll((AfxAddr)hModule);
+		MirvFix_InitEngine2();
 
 		HookEngineDll(hModule);
 
