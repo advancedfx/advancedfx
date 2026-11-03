@@ -753,6 +753,20 @@ extern "C" int afx_hook_source2_get_entity_ref_observer_target_handle(void * pRe
     return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
 }
 
+extern "C" int afx_hook_source2_get_entity_ref_parent_handle(void * pRef) {
+	if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+		return pInstance->GetParentHandle().ToInt();
+	}
+	return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
+}
+
+extern "C" int afx_hook_source2_get_entity_ref_root_handle(void * pRef) {
+	if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
+		return pInstance->GetRootHandle().ToInt();
+	}
+	return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
+}
+
 extern "C" FFIBool afx_hook_source2_get_entity_ref_attachment(void * pRef, const char* attachmentName, double outPosition[3], double outAngles[4]) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
 		auto idx = pInstance->LookupAttachment(attachmentName);
