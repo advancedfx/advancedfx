@@ -15,9 +15,23 @@
 		delete globalThis[id];
 	}
 
+	mirv.events.clientFrameStageNotify.off(id);
+
 	let enabled = false;
-	let ext: string = 'mov';
-	let ffmpegPresets: string[] = [];
+	const ffmpegPresets = new Map<string, string>();
+
+	const OBSERVER_MODE_POV = 2;
+	const TAKE_SUFFIX = '_{TAKE_NUMBER:2}';
+
+	// eslint-disable-next-line no-control-regex
+	const INVALID_FILE_NAME_CHARS = /[<>:"/\\|?*\x00-\x1f]/g;
+
+	function sanitize(value: string) {
+		return value
+			.replace(INVALID_FILE_NAME_CHARS, '_')
+			.replace(/[. ]+$/, '')
+			.replace(/[{}]/g, (c) => c + c);
+	}
 
 	function getSpectatedPlayer() {
 		const localControllerEntity = mirv.getEntityFromSplitScreenPlayer(0);
@@ -26,48 +40,62 @@
 			mirv.getHandleEntryIndex(localControllerEntity.getPlayerPawnHandle())
 		);
 		if (null === localPawnEntity) return null;
+		if (OBSERVER_MODE_POV !== localPawnEntity.getObserverMode()) return null;
 		const observerTargetEntity = mirv.getEntityFromIndex(
 			mirv.getHandleEntryIndex(localPawnEntity.getObserverTargetHandle())
 		);
 		if (null === observerTargetEntity) return null;
-		const obserTargetControllerEntity = mirv.getEntityFromIndex(
+		const observerTargetControllerEntity = mirv.getEntityFromIndex(
 			mirv.getHandleEntryIndex(observerTargetEntity.getPlayerControllerHandle())
 		);
-		if (null === obserTargetControllerEntity) return null;
-		return obserTargetControllerEntity;
+		if (null === observerTargetControllerEntity) return null;
+		return observerTargetControllerEntity;
 	}
 
 	function getBaseFolder() {
 		const demoNamePath = mirv.getDemoFilePath();
 
 		if (demoNamePath) {
-			const demoName = (demoNamePath.split(/[\\/]/).pop() ?? '').replace('.dem', '');
-			return `{RECORD_PATH}\\${demoName}`;
+			const demoName = sanitize(
+				(demoNamePath.split(/[\\/]/).pop() ?? '').replace(/\.dem$/i, '')
+			);
+			if (demoName) return `{RECORD_PATH}\\${demoName}`;
 		}
 
 		return '{RECORD_PATH}';
 	}
 
-	function getScreenShotsPreset(base: string) {
-		return `${getFfmpegPreset(base, false).replace(`.${ext}`, '')}\\{STREAM_NAME}\\{SEQUENCE_NR}.{EXT}`;
-	}
-
-	function getFfmpegPreset(base: string, addStreamName = true) {
+	function getFilePath(base: string, label?: string) {
 		let fileName = '';
 
 		const player = getSpectatedPlayer();
 		if (player) {
-			fileName += `pov_${player.getSanitizedPlayerName()}_`;
+			const playerName = sanitize(player.getSanitizedPlayerName() ?? '');
+			fileName += playerName ? `pov_${playerName}_` : 'pov_';
 		} else {
 			fileName += 'cam_';
 		}
 
-		fileName += `{TICK}_`;
+		fileName += '{TICK:6}';
 
-		if (addStreamName) fileName += '{STREAM_NAME}_';
-		fileName += `{TAKE}{TAKE_NUMBER}`;
+		if (label) fileName += `_${label}`;
+		fileName += TAKE_SUFFIX;
 
-		return `${base}\\${fileName}.${ext}`;
+		return `${base}\\${fileName}`;
+	}
+
+	function getScreenShotsPreset(base: string) {
+		return `${getFilePath(base)}\\{STREAM_NAME}\\{SEQUENCE_NR}.{EXT}`;
+	}
+
+	function getFfmpegPreset(base: string, ext: string) {
+		return `${getFilePath(base, '{STREAM_NAME}')}.${sanitize(ext)}`;
+	}
+
+	function getRecordFile(base: string, label: string, ext: string) {
+		return ffmpegPresets.size === 0
+			? `${getFilePath(base)}\\${label}.${ext}`
+			: `${getFilePath(base, label)}.${ext}`;
 	}
 
 	function applyTemplates() {
@@ -75,26 +103,25 @@
 		mirv.exec(
 			`mirv_streams settings edit afxClassic path "${getScreenShotsPreset(baseFolder)}"`
 		);
-		ffmpegPresets.forEach((p) =>
-			mirv.exec(`mirv_streams settings edit ${p} path "${getFfmpegPreset(baseFolder)}"`)
-		);
-		if (ffmpegPresets.length === 0) {
-			mirv.exec(
-				`mirv_streams record startMovieWavPath "${baseFolder}\\{TAKE}{TAKE_NUMBER}.wav"`
-			);
-		}
-		mirv.exec(
-			`mirv_streams record startMovieWavPath "${getFfmpegPreset(baseFolder, false)}"`.replace(
-				`.${ext}`,
-				'.wav'
-			)
+		ffmpegPresets.forEach((ext, p) =>
+			mirv.exec(`mirv_streams settings edit ${p} path "${getFfmpegPreset(baseFolder, ext)}"`)
 		);
 		mirv.exec(
-			`mirv_streams record campath path "${getFfmpegPreset(baseFolder, false)}"`.replace(
-				`.${ext}`,
-				'.xml'
-			)
+			`mirv_streams record startMovieWavPath "${getRecordFile(baseFolder, 'audio', 'wav')}"`
 		);
+		mirv.exec(
+			`mirv_streams record campath path "${getRecordFile(baseFolder, 'campath', 'xml')}"`
+		);
+		mirv.exec(`mirv_streams record cam path "${getRecordFile(baseFolder, 'camera', 'cam')}"`);
+	}
+
+	function resetTemplates() {
+		enabled = false;
+		mirv.exec('mirv_streams settings edit afxClassic path default');
+		ffmpegPresets.forEach((_, p) => mirv.exec(`mirv_streams settings edit ${p} path default`));
+		mirv.exec('mirv_streams record startMovieWavPath default');
+		mirv.exec('mirv_streams record campath path default');
+		mirv.exec('mirv_streams record cam path default');
 	}
 
 	mirv.events.clientFrameStageNotify.on(id, (e) => {
@@ -121,39 +148,23 @@
 					`.dedent()
 				);
 				return;
-			} else if (arg1 === 'ext') {
-				if (3 <= argC) {
-					ext = args.argV(2).replace('.', '');
-					return;
-				}
-
-				mirv.message(
-					`${arg0} ${arg1} <str> - Set extension for ffmpeg preset.
-					Current value: ${ext}
-					`.dedent()
-				);
-				return;
 			} else if (arg1 === 'ffmpegPresets'.toLowerCase()) {
 				if (3 <= argC) {
 					const arg2 = args.argV(2).toLowerCase();
-					if (arg2 === 'add' && 4 <= argC) {
-						ffmpegPresets.push(args.argV(3));
+					if (arg2 === 'add' && 5 <= argC) {
+						ffmpegPresets.set(args.argV(3), args.argV(4).replace(/^\./, ''));
 						return;
 					} else if (arg2 === 'print') {
-						let msg = '';
-						ffmpegPresets.forEach((p) => (msg += `${p}\n`));
+						let msg = 'name extension\n---------------\n';
+						ffmpegPresets.forEach((ext, p) => (msg += `${p} ${ext}\n`));
 						console.log(msg);
-						return;
-					} else if (arg2 === 'clear') {
-						ffmpegPresets = [];
 						return;
 					}
 				}
 
 				mirv.message(
-					`${arg0} ${arg1} add - Add ffmpeg settings name to apply to.
+					`${arg0} ${arg1} add <name> <ext> - Add ffmpeg settings name to apply to, <ext> must be supported by its codec.
 					${arg0} ${arg1} print - Print current presets.
-					${arg0} ${arg1} clear - Clear current presets.
 					`.dedent()
 				);
 				return;
@@ -161,18 +172,27 @@
 				applyTemplates();
 				enabled = true;
 				return;
+			} else if (arg1 === 'reset') {
+				resetTemplates();
+				ffmpegPresets.clear();
+				return;
 			}
 		}
 
 		mirv.message(
-			`This command is used to update recording settings paths to more convinient format.
+			`This command is used to update recording settings paths to a more convenient format.
+			Also works if no ffmpeg is used (assuming recording is set with screenshots).
+
 			Usage:
-			${arg0} ext <str> - Set extension for ffmpeg presets. Default: "mov"
 			${arg0} ffmpegPresets [...] - Manage presets that will be updated.
-			${arg0} apply - Apply settings to added presets and enabled their update.
+			${arg0} apply - Apply settings to added presets and enable their update.
+			${arg0} reset - Disable update and restore default paths, clear all presets.
 			${arg0} enabled 1|0 - Enable or disable presets update.
+
 			Example usage:
-			${arg0} ffmpegPresets add afxFfmpegProres;
+			mirv_streams add normal normal;
+			mirv_streams edit normal settings afxFfmpegProres;
+			${arg0} ffmpegPresets add afxFfmpegProres mov;
 			${arg0} apply;
 			`.dedent()
 		);
