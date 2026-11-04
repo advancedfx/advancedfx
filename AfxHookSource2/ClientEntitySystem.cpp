@@ -464,7 +464,7 @@ void Hook_ClientEntitySystem3(HMODULE clientDll) {
 }
 
 int GetHighestEntityIndex() {
-    return 2048; // Hardcoded for now, because the function we have is the count, not the index and we need to change mirv-script API to support that better.
+    return 0x7FFF; // Hardcoded for now, because the function we have is the count, not the index and we need to change mirv-script API to support that better.
     //return g_pEntityList && g_GetHighestEntityIndex ? g_GetHighestEntityIndex(*g_pEntityList, false) : -1;
 }
 
