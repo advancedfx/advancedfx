@@ -2,6 +2,9 @@
 
 #include "../shared/RecordingSettings.h"
 
+#include "SceneActionFilter.h"
+
+#include <memory>
 #include <string>
 #include <list>
 
@@ -48,6 +51,7 @@ public:
         , SmokeAction(other.SmokeAction)
         , OverlaysAction(other.OverlaysAction)
         , ScopeAction(other.ScopeAction)
+        , ActionFilter(other.ActionFilter)
     {
         Settings->AddRef();
     }
@@ -69,6 +73,7 @@ public:
             && Action::Draw == SmokeAction
             && Action::Draw == OverlaysAction
             && Action::Draw == ScopeAction
+            && ActionFilter->Empty()
         ;
     }
 
@@ -101,6 +106,7 @@ public:
         if(cmp = CompareAction(SmokeAction, o.SmokeAction)) return cmp < 0;
         if(cmp = CompareAction(OverlaysAction, o.OverlaysAction)) return cmp < 0;
         if(cmp = CompareAction(ScopeAction, o.ScopeAction)) return cmp;
+        if(cmp = ActionFilter->Compare(*o.ActionFilter)) return cmp;
         
         // A stream can not previewed in before-capture state if there is anything else
         // relying on a later state:, so we need to differ those:
@@ -213,6 +219,10 @@ public:
     Action SmokeAction = Action::Draw;
     Action OverlaysAction = Action::Draw;
     Action ScopeAction = Action::Draw;
+
+    // Applied first in the scene system, only what falls through uses the actions above.
+    // Immutable once shared (copies of CStreamSettings share it), edit via copy-on-write.
+    std::shared_ptr<const CSceneActionFilterList> ActionFilter = std::make_shared<const CSceneActionFilterList>();
 
 private:
     static bool AffectedByPreview(CaptureType_e captureType) {
