@@ -155,6 +155,10 @@ unsafe extern "C" {
 
     fn afx_hook_source2_get_entity_ref_observer_target_handle(p_ref: * mut AfxEntityRef) -> i32;
 
+    fn afx_hook_source2_get_entity_ref_parent_handle(p_ref: * mut AfxEntityRef) -> i32;
+
+    fn afx_hook_source2_get_entity_ref_root_handle(p_ref: * mut AfxEntityRef) -> i32;
+
     fn afx_hook_source2_is_playing_demo() -> bool;
 
     fn afx_hook_source2_is_demo_paused() -> bool;
@@ -1380,6 +1384,22 @@ fn afx_get_entity_ref_observer_target_handle(p_ref: * mut AfxEntityRef) -> i32 {
     return result;
 }
 
+fn afx_get_entity_ref_parent_handle(p_ref: * mut AfxEntityRef) -> i32 {
+    let result: i32;
+    unsafe {
+        result = afx_hook_source2_get_entity_ref_parent_handle(p_ref);
+    }
+    return result;
+}
+
+fn afx_get_entity_ref_root_handle(p_ref: * mut AfxEntityRef) -> i32 {
+    let result: i32;
+    unsafe {
+        result = afx_hook_source2_get_entity_ref_root_handle(p_ref);
+    }
+    return result;
+}
+
 
 
 
@@ -2536,6 +2556,16 @@ impl MirvEntityRef {
                 0,
             )
             .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_parent_handle),
+                js_string!("getParentHandle"),
+                0,
+            )
+            .function(
+                NativeFunction::from_fn_ptr(MirvEntityRef::get_root_handle),
+                js_string!("getRootHandle"),
+                0,
+            )
+            .function(
                 NativeFunction::from_fn_ptr(MirvEntityRef::get_attachment),
                 js_string!("getAttachment"),
                 0,
@@ -2772,6 +2802,24 @@ impl MirvEntityRef {
         if let Some(object) = this.as_object() {
             if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
                 return Ok(js_value!(afx_get_entity_ref_observer_target_handle(mirv.entity_ref)));
+            }
+        }
+        Err(advancedfx::js::errors::error_type(context).into())
+    }
+
+    fn get_parent_handle(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(js_value!(afx_get_entity_ref_parent_handle(mirv.entity_ref)));
+            }
+        }
+        Err(advancedfx::js::errors::error_type(context).into())
+    }
+
+    fn get_root_handle(this: &JsValue, _args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
+        if let Some(object) = this.as_object() {
+            if let Some(mirv) = object.downcast_ref::<MirvEntityRef>() {
+                return Ok(js_value!(afx_get_entity_ref_root_handle(mirv.entity_ref)));
             }
         }
         Err(advancedfx::js::errors::error_type(context).into())

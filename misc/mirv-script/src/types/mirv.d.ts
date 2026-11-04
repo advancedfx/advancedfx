@@ -682,6 +682,18 @@ declare namespace mirv {
 		getObserverTargetHandle(): number;
 
 		/**
+		 * @returns Handle of the parent entity (invalid handle if entity has no parent).
+		 * Since HLAE 2.193.0
+		 */
+		getParentHandle(): number;
+
+		/**
+		 * @returns Handle of the root parent entity (own handle if entity has no parent).
+		 * Since HLAE 2.193.0
+		 */
+		getRootHandle(): number;
+
+		/**
 		 * @remarks makes sense only on entities that have attachment points e.g player models (Pawns), weapons.
 		 * Attachments names could be found when inspecting models files via Source 2 Viewer.
 		 * Since HLAE 2.187.2

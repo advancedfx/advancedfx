@@ -32,8 +32,11 @@ enum class SceneActionFilterAction {
 struct SceneActionFilterQuery {
 	/// <summary>Material name or nullptr if not available.</summary>
 	const std::string* MaterialName = nullptr;
+	const std::string* className = nullptr;
 	/// <summary>Raw entity handle number if available.</summary>
 	std::optional<uint32_t> EntityHandle;
+	std::optional<uint32_t> ParentEntityHandle;
+	std::optional<uint32_t> RootEntityHandle;
 	/// <summary>Scene layer context view name or nullptr if not available.</summary>
 	const std::string* ViewName = nullptr;
 	/// <summary>Scene layer context view pass or nullptr if not available.</summary>
@@ -61,8 +64,13 @@ public:
 private:
 	struct Entry {
 		bool UseHandle = false;
+		bool UseParentHandle = false;
+		bool UseRootHandle = false;
 		uint32_t Handle = 0;
+		uint32_t ParentHandle = 0;
+		uint32_t RootHandle = 0;
 		// Wildcard masks (\* = wildcard, \\ = \), empty = don't care.
+		std::string className;
 		std::string MaterialName;
 		std::string ViewName;
 		std::string ViewPass;

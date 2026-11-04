@@ -9,7 +9,10 @@
 // CSceneActionFilterList::Entry ///////////////////////////////////////////////
 
 bool CSceneActionFilterList::Entry::Matches(const SceneActionFilterQuery& query) const {
+	if (UseRootHandle && !(query.RootEntityHandle.has_value() && *query.RootEntityHandle == RootHandle)) return false;
+	if (UseParentHandle && !(query.ParentEntityHandle.has_value() && *query.ParentEntityHandle == ParentHandle)) return false;
 	if (UseHandle && !(query.EntityHandle.has_value() && *query.EntityHandle == Handle)) return false;
+	if (!className.empty() && !(query.className && StringWildCard1Matched(className.c_str(), query.className->c_str()))) return false;
 	if (!MaterialName.empty() && !(query.MaterialName && StringWildCard1Matched(MaterialName.c_str(), query.MaterialName->c_str()))) return false;
 	if (!ViewName.empty() && !(query.ViewName && StringWildCard1Matched(ViewName.c_str(), query.ViewName->c_str()))) return false;
 	if (!ViewPass.empty() && !(query.ViewPass && StringWildCard1Matched(ViewPass.c_str(), query.ViewPass->c_str()))) return false;
@@ -17,8 +20,13 @@ bool CSceneActionFilterList::Entry::Matches(const SceneActionFilterQuery& query)
 }
 
 int CSceneActionFilterList::Entry::Compare(const Entry& o) const {
+	if (UseRootHandle != o.UseRootHandle) return UseRootHandle ? 1 : -1;
+	if (UseParentHandle != o.UseParentHandle) return UseParentHandle ? 1 : -1;
 	if (UseHandle != o.UseHandle) return UseHandle ? 1 : -1;
+	if (UseRootHandle && RootHandle != o.RootHandle) return RootHandle > o.RootHandle ? 1 : -1;
+	if (UseParentHandle && ParentHandle != o.ParentHandle) return ParentHandle > o.ParentHandle ? 1 : -1;
 	if (UseHandle && Handle != o.Handle) return Handle > o.Handle ? 1 : -1;
+	if (int cmp = className.compare(o.className)) return cmp;
 	if (int cmp = MaterialName.compare(o.MaterialName)) return cmp;
 	if (int cmp = ViewName.compare(o.ViewName)) return cmp;
 	if (int cmp = ViewPass.compare(o.ViewPass)) return cmp;
@@ -77,6 +85,9 @@ bool CSceneActionFilterList::ParseEx(advancedfx::ICommandArgs* args, Entry& outE
 			"\n"
 			"<option> can be:\n"
 			"\"handle=<handleNumber>\" (of entity)\n"
+			"\"parentHandle=<handleNumber>\" (of entity)\n"
+			"\"rootHandle=<handleNumber>\" (of entity)\n"
+			"\"className=<wildCardString>\" (of entity)\n"
 			"\"name=<wildCardString>\" (of material)\n"
 			"\"viewName=<wildCardString>\" (of scene layer context)\n"
 			"\"viewPass=<wildCardString>\" (of scene layer context)\n"
@@ -106,9 +117,20 @@ bool CSceneActionFilterList::ParseEx(advancedfx::ICommandArgs* args, Entry& outE
 		std::string sValue = sArg.substr(posDelimiter + 1);
 		const char* key = sKey.c_str();
 
-		if (!_stricmp("handle", key)) {
+		if (!_stricmp("rootHandle", key)) {
+			entry.UseRootHandle = true;
+			entry.RootHandle = (uint32_t)strtoul(sValue.c_str(), nullptr, 0);
+		}
+		else if (!_stricmp("parentHandle", key)) {
+			entry.UseParentHandle = true;
+			entry.ParentHandle = (uint32_t)strtoul(sValue.c_str(), nullptr, 0);
+		}
+		else if (!_stricmp("handle", key)) {
 			entry.UseHandle = true;
 			entry.Handle = (uint32_t)strtoul(sValue.c_str(), nullptr, 0);
+		}
+		else if (!_stricmp("className", key)) {
+			entry.className = sValue;
 		}
 		else if (!_stricmp("name", key)) {
 			entry.MaterialName = sValue;
@@ -145,10 +167,15 @@ void CSceneActionFilterList::Print() const {
 	int id = 0;
 	for (const Entry& entry : m_Entries) {
 		std::string handleStr = entry.UseHandle ? std::to_string(entry.Handle) : "\\*";
+		std::string parentHandleStr = entry.UseParentHandle ? std::to_string(entry.ParentHandle) : "\\*";
+		std::string rootHandleStr = entry.UseRootHandle ? std::to_string(entry.RootHandle) : "\\*";
 		advancedfx::Message(
-			"id=%i, \"handle=%s\", \"name=%s\", \"viewName=%s\", \"viewPass=%s\", \"action=%s\"\n",
+			"id=%i, \"handle=%s\", \"parentHandle=%s\", \"rootHandle=%s\", \"className=%s\", \"name=%s\", \"viewName=%s\", \"viewPass=%s\", \"action=%s\"\n",
 			id,
 			handleStr.c_str(),
+			parentHandleStr.c_str(),
+			rootHandleStr.c_str(),
+			entry.className.empty() ? "\\*" : entry.className.c_str(),
 			entry.MaterialName.empty() ? "\\*" : entry.MaterialName.c_str(),
 			entry.ViewName.empty() ? "\\*" : entry.ViewName.c_str(),
 			entry.ViewPass.empty() ? "\\*" : entry.ViewPass.c_str(),
