@@ -19,6 +19,7 @@ public:
     CStreamSettings(const CStreamSettings & other)
         : Name(other.Name)
         , Record(other.Record)
+        , Preview(other.Preview)
         , Capture(other.Capture)
         , CaptureType(other.CaptureType)
         , Depth24(other.Depth24)
@@ -71,46 +72,59 @@ public:
         ;
     }
 
-    int CompareRenderPass(const CStreamSettings &  o) const {
+    bool CompareRenderPassLess(const CStreamSettings &  o) const {
         int cmp;
-        if(cmp = CompareBool(ClearOverride, o.ClearOverride)) return cmp;
+        if(cmp = CompareBool(ClearOverride, o.ClearOverride)) return cmp < 0;
         if(ClearOverride) {
-           if(cmp = CompareFloat(ClearOverrideColor.R, o.ClearOverrideColor.R)) return cmp;
-           if(cmp = CompareFloat(ClearOverrideColor.G, o.ClearOverrideColor.G)) return cmp;
-           if(cmp = CompareFloat(ClearOverrideColor.B, o.ClearOverrideColor.B)) return cmp;
-           if(cmp = CompareFloat(ClearOverrideColor.A, o.ClearOverrideColor.A)) return cmp;
+           if(cmp = CompareFloat(ClearOverrideColor.R, o.ClearOverrideColor.R)) return cmp < 0;
+           if(cmp = CompareFloat(ClearOverrideColor.G, o.ClearOverrideColor.G)) return cmp < 0;
+           if(cmp = CompareFloat(ClearOverrideColor.B, o.ClearOverrideColor.B)) return cmp < 0;
+           if(cmp = CompareFloat(ClearOverrideColor.A, o.ClearOverrideColor.A)) return cmp < 0;
         }
-        if(cmp = CompareBool(ClearBeforeUi, o.ClearBeforeUi)) return cmp;
+        if(cmp = CompareBool(ClearBeforeUi, o.ClearBeforeUi)) return cmp < 0;
         if(ClearBeforeUi) {
-           if(cmp = CompareFloat(ClearBeforeUiColor.R, o.ClearBeforeUiColor.R)) return cmp;
-           if(cmp = CompareFloat(ClearBeforeUiColor.G, o.ClearBeforeUiColor.G)) return cmp;
-           if(cmp = CompareFloat(ClearBeforeUiColor.B, o.ClearBeforeUiColor.B)) return cmp;
-           if(cmp = CompareFloat(ClearBeforeUiColor.A, o.ClearBeforeUiColor.A)) return cmp;
+           if(cmp = CompareFloat(ClearBeforeUiColor.R, o.ClearBeforeUiColor.R)) return cmp < 0;
+           if(cmp = CompareFloat(ClearBeforeUiColor.G, o.ClearBeforeUiColor.G)) return cmp < 0;
+           if(cmp = CompareFloat(ClearBeforeUiColor.B, o.ClearBeforeUiColor.B)) return cmp < 0;
+           if(cmp = CompareFloat(ClearBeforeUiColor.A, o.ClearBeforeUiColor.A)) return cmp < 0;
         }
-        if(cmp = CompareCommands(BeforeCommands, o.BeforeCommands)) return cmp;
-        if(cmp = CompareCommands(AfterCommands, o.AfterCommands)) return cmp;
-        if(cmp = CompareAction(ViewModelAction, o.ViewModelAction)) return cmp;
-        if(cmp = CompareAction(ParticlesAction, o.ParticlesAction)) return cmp;
-        if(cmp = CompareAction(FirstPersonLegsAction, o.FirstPersonLegsAction)) return cmp;
-        if(cmp = CompareAction(ShellsAction, o.ShellsAction)) return cmp;
-        if(cmp = CompareAction(WeaponsAction, o.WeaponsAction)) return cmp;
-        if(cmp = CompareAction(PlayersAction, o.PlayersAction)) return cmp;
-        if(cmp = CompareAction(WorldAction, o.WorldAction)) return cmp;
-        if(cmp = CompareAction(SkyAction, o.SkyAction)) return cmp;
-        if(cmp = CompareAction(SmokeAction, o.SmokeAction)) return cmp;
-        if(cmp = CompareAction(OverlaysAction, o.OverlaysAction)) return cmp;
+        if(cmp = CompareCommands(BeforeCommands, o.BeforeCommands)) return cmp < 0;
+        if(cmp = CompareCommands(AfterCommands, o.AfterCommands)) return cmp < 0;
+        if(cmp = CompareAction(ViewModelAction, o.ViewModelAction)) return cmp < 0;
+        if(cmp = CompareAction(ParticlesAction, o.ParticlesAction)) return cmp < 0;
+        if(cmp = CompareAction(FirstPersonLegsAction, o.FirstPersonLegsAction)) return cmp < 0;
+        if(cmp = CompareAction(ShellsAction, o.ShellsAction)) return cmp < 0;
+        if(cmp = CompareAction(WeaponsAction, o.WeaponsAction)) return cmp < 0;
+        if(cmp = CompareAction(PlayersAction, o.PlayersAction)) return cmp < 0;
+        if(cmp = CompareAction(WorldAction, o.WorldAction)) return cmp < 0;
+        if(cmp = CompareAction(SkyAction, o.SkyAction)) return cmp < 0;
+        if(cmp = CompareAction(SmokeAction, o.SmokeAction)) return cmp < 0;
+        if(cmp = CompareAction(OverlaysAction, o.OverlaysAction)) return cmp < 0;
         if(cmp = CompareAction(ScopeAction, o.ScopeAction)) return cmp;
+        
+        // A stream can not previewed in before-capture state if there is anything else
+        // relying on a later state:, so we need to differ those:
+        if(
+            Preview && AffectedByPreview(o.CaptureType)
+        )
+        {
+            if((int)Capture < (int)o.Capture) return true;
+        }
 
-        return 0;
-    }    
+        return false;
+    }
 
     std::wstring Name;
 
     bool Record = true;
+    bool Preview = false;
 
-    enum class Capture_e {
-        BeforePresent,
-        BeforeUi
+    // The number ordering is intentional, so that the most "complete" pass is guaranteed to be rendered first
+    // (e.g. in main pass if possible), so we don't taint later passes.
+    // Basically latest capture should have lowest number and increase from there (the earlier the higher the number).
+    enum class Capture_e : int {
+        BeforePresent = 0,
+        BeforeUi = 1
     } Capture = Capture_e::BeforePresent;
 
     enum class CaptureType_e {
@@ -201,6 +215,16 @@ public:
     Action ScopeAction = Action::Draw;
 
 private:
+    static bool AffectedByPreview(CaptureType_e captureType) {
+        switch(captureType) {
+        case CStreamSettings::CaptureType_e::DepthRgb:
+        case CStreamSettings::CaptureType_e::DepthF:
+            return false;
+        }
+        return true;
+    }
+
+
     static int CompareBool(bool lhs, bool rhs) {
         if(lhs != rhs) return lhs ? 1 : -1;
         return 0;
@@ -242,5 +266,4 @@ private:
         if(cmp) return 0 < cmp ? 1 : -1;
         return 0;
     }
-
 };

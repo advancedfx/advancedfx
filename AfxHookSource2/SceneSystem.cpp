@@ -930,6 +930,7 @@ void CheckAndDo_Untoggle_BlockColorDepth(void * pThisSoftwareCommandList) {
 
 void QueueCallbackBeforePostProcessing(void* pCRenderContextDx11_SoftwareCommandList);
 void QueueCallbackAfterPostProcessing(void* pCRenderContextDx11_SoftwareCommandList);
+void QueueCallbackBeforePanoramaEngineConsole(void* pCRenderContextDx11_SoftwareCommandList);
 
 typedef void * (__fastcall * SoftwareCommandList_Commit_t)(void * pThisSoftwareCommandList);
 SoftwareCommandList_Commit_t org_SoftwareCommandList_Commit = nullptr;
@@ -988,6 +989,10 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 	if(0 == strcmp(context.ViewPass,"PostProcessing")) {
 		QueueCallbackBeforePostProcessing(pCRenderContextDx11_SoftwareCommandList);
 		g_pPostProcessingCommandList = pCRenderContextDx11_SoftwareCommandList;
+	}
+
+	if(context.ViewName && 0 == strcmp(context.ViewName,"PanoramaEngineConsole")) {
+		QueueCallbackBeforePanoramaEngineConsole(pCRenderContextDx11_SoftwareCommandList);
 	}
 
 	if(g_bSceneFilterSystemActive && pDrawingData) {
