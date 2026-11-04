@@ -9,6 +9,8 @@
 #include "MirvWav.h"
 
 #include <shared/AfxDetours.h>
+#include <shared/FileTools.h>
+#include <shared/OutputPathTemplate.h>
 #include <shared/StringTools.h>
 
 #include <list>
@@ -65,13 +67,13 @@ public:
 		}
 	}
 
-	void Start(const wchar_t * directoryPath)
+	void Start(const wchar_t * pathTemplate)
 	{
 		Stop();
 
 		m_Recording = true;
 		m_Time = 0 < m_TimePadding ? m_TimePadding : 0;
-		m_Directory = directoryPath;
+		m_PathTemplate = pathTemplate;
 	}
 
 	void Stop()
@@ -95,9 +97,15 @@ public:
 		std::map<int, CEntityMixData>::iterator it = m_EntityMixData.find(m_EntityIndex);
 		if (it == m_EntityMixData.end())
 		{
-			std::wostringstream os;
-			os << m_Directory << L"\\entity_" << m_EntityIndex << L".wav";
-			std::wstring fileName = os.str();
+			advancedfx::COutputPathValues values;
+			values.SetNumber(advancedfx::OutputPathVariable_EntityIndex, m_EntityIndex);
+			std::wstring fileName = values.Expand(m_PathTemplate, advancedfx::OutputPathVariable_None);
+
+			if (!CreateParentPath(fileName.c_str()))
+			{
+				std::string utf8FileName;
+				Tier0_Warning("Error: Could not create folder for \"%s\".\n", WideStringToUTF8String(fileName.c_str(), utf8FileName) ? utf8FileName.c_str() : "?");
+			}
 
 			it = m_EntityMixData.emplace(std::piecewise_construct, std::forward_as_tuple(m_EntityIndex), std::forward_as_tuple(m_Time, fileName.c_str())).first;
 		}
@@ -122,7 +130,7 @@ private:
 	bool m_Recording = false;
 	int m_EntityIndex = 0;
 	double m_Time = 0;
-	std::wstring m_Directory;
+	std::wstring m_PathTemplate; // Only {ENTITY_INDEX} left to expand.
 
 	class CMixData
 	{
@@ -327,11 +335,11 @@ void Mirv_Voice_OnAfterFrameRenderEnd(void)
 	g_MirvVoiceWriter.OnAfterFrameRenderEnd();
 }
 
-bool Mirv_Voice_StartRecording(const wchar_t * directoryPath)
+bool Mirv_Voice_StartRecording(const wchar_t * pathTemplate)
 {
 	bool result = Hook_CVoiceWriter_AddDecompressedData();
 
-	g_MirvVoiceWriter.Start(directoryPath);
+	g_MirvVoiceWriter.Start(pathTemplate);
 
 	return result;
 }
@@ -442,7 +450,11 @@ CON_COMMAND(mirv_voice, "Controls voice data related features.")
 							Tier0_Warning("Error: Can not convert \"%s\" from UTF-8 to WideString.\n", args->ArgV(3));
 					}
 
-					Mirv_Voice_StartRecording(directorPath.c_str());
+					std::wstring pathTemplate = advancedfx::OutputPathTemplate_Escape(directorPath);
+					if (!pathTemplate.empty()) pathTemplate.append(L"\\");
+					pathTemplate.append(L"entity_{ENTITY_INDEX}.wav");
+
+					Mirv_Voice_StartRecording(pathTemplate.c_str());
 					return;
 				}
 				else if (!_stricmp("stop", cmd2))
