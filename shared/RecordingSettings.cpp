@@ -51,12 +51,42 @@ CRecordingSettings::CShared::CShared()
 	}
 
 	{
-		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProres", true, "-c:v prores_ks -profile:v 4 -pix_fmt yuv444p10le {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mov");
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProres422Proxy", true, "-c:v prores_ks -profile:v 0 -pix_fmt yuv422p10le {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mov");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
 	{
-		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProresAlpha", true, "-c:v prores_ks -profile:v 4 -pix_fmt yuva444p10le {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mov");
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProres422LT", true, "-c:v prores_ks -profile:v 1 -pix_fmt yuv422p10le {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mov");
+		m_NamedSettings.emplace(settings->GetName(), settings);
+	}
+
+	{
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProres422", true, "-c:v prores_ks -profile:v 2 -pix_fmt yuv422p10le {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mov");
+		m_NamedSettings.emplace(settings->GetName(), settings);
+	}
+
+	{
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProres422HQ", true, "-c:v prores_ks -profile:v 3 -pix_fmt yuv422p10le {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mov");
+		m_NamedSettings.emplace(settings->GetName(), settings);
+	}
+
+	{
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProres4444", true, "-c:v prores_ks -profile:v 4 -pix_fmt yuv444p10le {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mov");
+		m_NamedSettings.emplace(settings->GetName(), settings);
+	}
+
+	{
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProres4444Alpha", true, "-c:v prores_ks -profile:v 4 -pix_fmt yuva444p10le {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mov");
+		m_NamedSettings.emplace(settings->GetName(), settings);
+	}
+
+	{
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProres", true, "-c:v prores_ks -profile:v 4 -q:v 9 -pix_fmt yuv444p10le {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mov");
+		m_NamedSettings.emplace(settings->GetName(), settings);
+	}
+
+	{
+		CRecordingSettings * settings = new CFfmpegRecordingSettings("afxFfmpegProresAlpha", true, "-c:v prores_ks -profile:v 4 -q:v 9 -pix_fmt yuva444p10le {QUOTE}{AFX_OUTPUT_FILE}{QUOTE}", "{STREAM_PATH}\\video.mov");
 		m_NamedSettings.emplace(settings->GetName(), settings);
 	}
 
