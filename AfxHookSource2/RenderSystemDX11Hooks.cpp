@@ -4348,7 +4348,7 @@ private:
                         break;
                     }
                     if(pszError){
-                        advancedfx::Warning("AFXWARNING: \"%s\" cvar to be set has the following problem: %s.", pArg0,pszError);
+                        advancedfx::Warning("AFXWARNING: \"%s\" cvar to be set has the following problem: %s.\n", pArg0,pszError);
                     }
                 } else {
                    SOURCESDK::CS2::ConCommandHandle cmd_handle = SOURCESDK::CS2::g_pCVar->FindCommand(pArg0, false );
@@ -4362,7 +4362,7 @@ private:
                         }
                         SOURCESDK::CS2::g_pCVar->DispatchConCommand(cmd_handle, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(vecArgs.size(),vecArgs.data()));
                     } else {
-                        advancedfx::Warning("AFXWARNING: \"%s\" to be set / executed is not a command or cvar.", pArg0);
+                        advancedfx::Warning("AFXWARNING: \"%s\" to be set / executed is not a command or cvar.\n", pArg0);
                     }
                 }
             }
@@ -5561,7 +5561,7 @@ void CAfxStreams::Console_Preview(advancedfx::ICommandArgs* args) {
         }
 
         if(m_Recording) {
-            advancedfx::Warning("AFXERROR: can not be changed during recording.");
+            advancedfx::Warning("AFXERROR: can not be changed during recording.\n");
             return;
         }
 
@@ -5586,7 +5586,7 @@ void CAfxStreams::Console_Preview(advancedfx::ICommandArgs* args) {
 
 void CAfxStreams::Console_PreviewEnd() {
     if(m_Recording) {
-        advancedfx::Warning("AFXERROR: can not be changed during recording.");
+        advancedfx::Warning("AFXERROR: can not be changed during recording.\n");
         return;
     }
 
@@ -5755,9 +5755,30 @@ void CAfxStreams::RecordStart(bool bPreview)
 
     m_AutoForceFullReSmoke = false;
     m_CompositeSmoke = false;
+
     
     if(!bPreview) {
-        advancedfx::Message("Starting recording ... ");
+        advancedfx::Message("Starting recording ... \n");
+
+		SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
+
+		float host_framerate = m_OverrideFps ? m_OverrideFpsValue : (handle_host_framerate != nullptr ? handle_host_framerate->m_Value.m_flValue : 0);
+
+		double frameTime;
+		if (1.0 <= host_framerate) {
+			m_StartHostFrameRateValue = host_framerate;
+			frameTime = 1.0 / host_framerate;
+		}
+		else {
+			m_StartHostFrameRateValue = host_framerate ? 1.0f / host_framerate : 0.0f;
+			frameTime = host_framerate;
+		}
+
+		if (0 == frameTime || nullptr == handle_host_framerate) {
+			advancedfx::Warning("You probably forgot to set mirv_streams record fps or host_framerate to the FPS you want to record.\n");
+			advancedfx::Warning("Recording has failed.\n");
+			return;
+		}
 
         if(InitOutputPathValues())
         {
@@ -5766,7 +5787,6 @@ void CAfxStreams::RecordStart(bool bPreview)
 
             std::string utf8TakeDir;
             bool utf8TakeDirOk = WideStringToUTF8String(m_TakeDir.c_str(), utf8TakeDir);
-            SOURCESDK::CS2::Cvar_s * handle_host_framerate = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("host_framerate", false).Get());
             SOURCESDK::CS2::Cvar_s * handle_engine_no_focus_sleep = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("engine_no_focus_sleep", false).Get());
             SOURCESDK::CS2::Cvar_s * handle_r_always_render_all_windows = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_always_render_all_windows", false).Get());
             SOURCESDK::CS2::Cvar_s * handle_r_wait_on_present = SOURCESDK::CS2::g_pCVar->GetCvar(SOURCESDK::CS2::g_pCVar->FindConVar("r_wait_on_present", false).Get());
@@ -5791,24 +5811,6 @@ void CAfxStreams::RecordStart(bool bPreview)
             if(handle_r_wait_on_present) {
                 m_OldValue_r_wait_on_present = handle_r_wait_on_present->m_Value.m_bValue;
                 handle_r_wait_on_present->m_Value.m_bValue = true;            
-            }
-
-            float host_framerate = m_OverrideFps ? m_OverrideFpsValue : (handle_host_framerate != nullptr ? handle_host_framerate->m_Value.m_flValue : 0);
-            double frameTime;
-            if (1.0 <= host_framerate) {
-                m_StartHostFrameRateValue = host_framerate;
-                frameTime = 1.0 / host_framerate;
-            }
-            else {
-                m_StartHostFrameRateValue = host_framerate ? 1.0f / host_framerate : 0.0f;
-                frameTime = host_framerate;
-            }
-
-            if (0 == frameTime) {
-                advancedfx::Warning("You probably forgot to set host_framerate to the FPS you want to record.\n");
-                if (nullptr == handle_host_framerate) {
-                    advancedfx::Warning("You probably forgot to set mirv_streams record fps to the FPS you want to record.\n");
-                }
             }
 
             if(m_CampathAutoSave && 0 < g_CamPath.GetSize())
@@ -5870,14 +5872,14 @@ void CAfxStreams::RecordStart(bool bPreview)
                 if(handle_startmovie.IsValid()) {
                     const char * pszArgs[3] = {"startmovie",ADVANCEDFX_STARTMOVIE_WAV_KEY,"wav"};
                     SOURCESDK::CS2::g_pCVar->DispatchConCommand(handle_startmovie, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(3,pszArgs));
-                } else advancedfx::Warning("AFXERROR: startmovie command not found, wav recording not possible.");
+                } else advancedfx::Warning("AFXERROR: startmovie command not found, wav recording not possible.\n");
             }
 
             AfxHookSourceRs_Engine_OnRecordStart(utf8TakeDirOk ? utf8TakeDir.c_str() : nullptr);
         }
         else
         {
-            advancedfx::Message("FAILED");
+            advancedfx::Message("FAILED\n");
             advancedfx::Warning("Error: Failed to determine output paths for record name \"%s\" and take \"%s\".\n", m_RecordName.c_str(), m_Take.c_str());
         }
     }
@@ -5915,14 +5917,14 @@ void CAfxStreams::RecordEnd(bool bPreview)
         {
             AfxHookSourceRs_Engine_OnRecordEnd();
 
-            advancedfx::Message("Finishing recording ... ");
+            advancedfx::Message("Finishing recording ... \n");
             if (m_StartMovieWavUsed)
             {
                 SOURCESDK::CS2::ConCommandHandle handle_endmovie = SOURCESDK::CS2::g_pCVar->FindCommand( "endmovie", false );
                 if(handle_endmovie.IsValid()) {
                     const char * pszArgs[1] = {"endmovie"};
                     SOURCESDK::CS2::g_pCVar->DispatchConCommand(handle_endmovie, SOURCESDK::CS2::CCommandContext(SOURCESDK::CS2::CT_FIRST_SPLITSCREEN_CLIENT,0), SOURCESDK::CS2::CCommand(1,pszArgs));
-                } else advancedfx::Warning("AFXERROR: endmovie command not found, stopping the wav recording not possible.");
+                } else advancedfx::Warning("AFXERROR: endmovie command not found, stopping the wav recording not possible.\n");
 
             }
 
