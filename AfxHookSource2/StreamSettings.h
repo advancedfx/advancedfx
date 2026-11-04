@@ -105,8 +105,8 @@ public:
         if(cmp = CompareAction(SkyAction, o.SkyAction)) return cmp < 0;
         if(cmp = CompareAction(SmokeAction, o.SmokeAction)) return cmp < 0;
         if(cmp = CompareAction(OverlaysAction, o.OverlaysAction)) return cmp < 0;
-        if(cmp = CompareAction(ScopeAction, o.ScopeAction)) return cmp;
-        if(cmp = ActionFilter->Compare(*o.ActionFilter)) return cmp;
+        if(cmp = CompareAction(ScopeAction, o.ScopeAction)) return cmp < 0;
+        if(cmp = ActionFilter->Compare(*o.ActionFilter)) return cmp < 0;
         
         // A stream can not previewed in before-capture state if there is anything else
         // relying on a later state:, so we need to differ those:

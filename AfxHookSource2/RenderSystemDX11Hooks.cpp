@@ -5430,6 +5430,7 @@ void CAfxStreams::Console_Edit(advancedfx::ICommandArgs* args) {
             else if(0 == _stricmp("scopeAction", arg2)) {
                 advancedfx::CSubCommandArgs subArgs(args, 3);
                 StreamSettingsActionSubCommand(stream.ScopeAction, &subArgs);
+                if(bUpdatePreview) RecordStart(true);
                 return;
             }
         }
