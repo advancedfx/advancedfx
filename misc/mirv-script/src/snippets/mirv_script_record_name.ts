@@ -140,6 +140,7 @@
 			if (arg1 === 'enabled') {
 				if (3 <= argC) {
 					enabled = args.argV(2) === '1';
+					if (enabled) applyTemplates();
 					return;
 				}
 				mirv.message(
@@ -168,10 +169,6 @@
 					`.dedent()
 				);
 				return;
-			} else if (arg1 === 'apply') {
-				applyTemplates();
-				enabled = true;
-				return;
 			} else if (arg1 === 'reset') {
 				resetTemplates();
 				ffmpegPresets.clear();
@@ -181,19 +178,19 @@
 
 		mirv.message(
 			`This command is used to update recording settings paths to a more convenient format.
-			Also works if no ffmpeg is used (assuming recording is set with screenshots).
+			It also works if no ffmpeg presets are used (assuming recording with screenshots).
 
 			Usage:
-			${arg0} ffmpegPresets [...] - Manage presets that will be updated.
-			${arg0} apply - Apply settings to added presets and enable their update.
-			${arg0} reset - Disable update and restore default paths, clear all presets.
+			${arg0} ffmpegPresets add <name> <ext> - Add ffmpeg settings name to apply to, <ext> must be supported by its codec.
+			${arg0} ffmpegPresets print - Print current presets.
+			${arg0} reset - Disable update and restore default paths, clear all presets added to update list.
 			${arg0} enabled 1|0 - Enable or disable presets update.
 
 			Example usage:
 			mirv_streams add normal normal;
 			mirv_streams edit normal settings afxFfmpegProres;
 			${arg0} ffmpegPresets add afxFfmpegProres mov;
-			${arg0} apply;
+			${arg0} enabled 1;
 			`.dedent()
 		);
 	});
