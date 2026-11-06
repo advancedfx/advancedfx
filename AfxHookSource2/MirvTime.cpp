@@ -54,7 +54,7 @@ float CMirvTime::interpolation_amount_get(void)
 		return g_DemoPausedData.FirstPausedInterpolationAmount;
 	}*/
 
-	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +14) : 0;
+	return g_pGlobals ? *(float *)((unsigned char *)g_pGlobals +14*4) : 0;
 }
 
 bool CMirvTime::GetCurrentDemoTick(int& outTick) {
