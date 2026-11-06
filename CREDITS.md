@@ -444,6 +444,16 @@ code
 
 https://github.com/wuXinnnn
 
+#### Co1Swet
+
+2026-06-11 - 2026-06-11
+
+code
+
+Former lead programmer (2007 - 2025).
+
+https://github.com/Co1Swet
+
 #### Luis 'rechedev9' Reche
 
 2026-07-10 - 2026-07-10
