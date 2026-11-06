@@ -50,6 +50,12 @@ public:
 	/// <summary>Finds the first matching filter. Returns false if none matched (fall through).</summary>
 	bool Match(const SceneActionFilterQuery& query, SceneActionFilterAction& outAction) const;
 
+	/// <summary>Finds the decision for a whole pass, only ViewName and ViewPass of the query are used.
+	/// Only scope=pass filters can decide a pass. Returns false if no scope=pass filter matches or if
+	/// a filter that is not scope=pass and could match objects of the pass comes first (fall through
+	/// to Match per object).</summary>
+	bool MatchPass(const SceneActionFilterQuery& query, SceneActionFilterAction& outAction) const;
+
 	/// <summary>Total order, for CStreamSettings::CompareRenderPass.</summary>
 	int Compare(const CSceneActionFilterList& other) const;
 
@@ -74,9 +80,12 @@ private:
 		std::string MaterialName;
 		std::string ViewName;
 		std::string ViewPass;
+		// scope=pass: Blocks the whole pass if it decides it, can't be combined with handle or name.
+		bool ScopePass = false;
 		SceneActionFilterAction Action = SceneActionFilterAction::Draw;
 
 		bool Matches(const SceneActionFilterQuery& query) const;
+		bool MatchesView(const SceneActionFilterQuery& query) const;
 		int Compare(const Entry& other) const;
 	};
 
@@ -103,6 +112,7 @@ public:
 	void Clear();
 
 	bool Match(const SceneActionFilterQuery& query, SceneActionFilterAction& outAction) const;
+	bool MatchPass(const SceneActionFilterQuery& query, SceneActionFilterAction& outAction) const;
 
 private:
 	mutable std::shared_mutex m_Mutex;

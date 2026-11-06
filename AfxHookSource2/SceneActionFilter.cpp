@@ -14,6 +14,10 @@ bool CSceneActionFilterList::Entry::Matches(const SceneActionFilterQuery& query)
 	if (UseHandle && !(query.EntityHandle.has_value() && *query.EntityHandle == Handle)) return false;
 	if (!className.empty() && !(query.className && StringWildCard1Matched(className.c_str(), query.className->c_str()))) return false;
 	if (!MaterialName.empty() && !(query.MaterialName && StringWildCard1Matched(MaterialName.c_str(), query.MaterialName->c_str()))) return false;
+	return MatchesView(query);
+}
+
+bool CSceneActionFilterList::Entry::MatchesView(const SceneActionFilterQuery& query) const {
 	if (!ViewName.empty() && !(query.ViewName && StringWildCard1Matched(ViewName.c_str(), query.ViewName->c_str()))) return false;
 	if (!ViewPass.empty() && !(query.ViewPass && StringWildCard1Matched(ViewPass.c_str(), query.ViewPass->c_str()))) return false;
 	return true;
@@ -30,6 +34,7 @@ int CSceneActionFilterList::Entry::Compare(const Entry& o) const {
 	if (int cmp = MaterialName.compare(o.MaterialName)) return cmp;
 	if (int cmp = ViewName.compare(o.ViewName)) return cmp;
 	if (int cmp = ViewPass.compare(o.ViewPass)) return cmp;
+	if (ScopePass != o.ScopePass) return ScopePass ? 1 : -1;
 	if (Action != o.Action) return (int)Action > (int)o.Action ? 1 : -1;
 	return 0;
 }
@@ -42,6 +47,17 @@ bool CSceneActionFilterList::Match(const SceneActionFilterQuery& query, SceneAct
 			outAction = entry.Action;
 			return true;
 		}
+	}
+	return false;
+}
+
+bool CSceneActionFilterList::MatchPass(const SceneActionFilterQuery& query, SceneActionFilterAction& outAction) const {
+	for (const Entry& entry : m_Entries) {
+		if (!entry.MatchesView(query)) continue;
+		// A filter that is not scope=pass could match objects of this pass first, so it needs to be decided per object:
+		if (!entry.ScopePass) return false;
+		outAction = entry.Action;
+		return true;
 	}
 	return false;
 }
@@ -91,11 +107,15 @@ bool CSceneActionFilterList::ParseEx(advancedfx::ICommandArgs* args, Entry& outE
 			"\"name=<wildCardString>\" (of material)\n"
 			"\"viewName=<wildCardString>\" (of scene layer context)\n"
 			"\"viewPass=<wildCardString>\" (of scene layer context)\n"
+			"\"scope=object|pass\" (default is object)\n"
 			"\"action=draw|noDraw|zOnly\"\n"
 			"\n"
 			"- The action option must be given!\n"
 			"- <wildCardString> is a string without quotes, where \\* is the wildcard and \\\\ is \\\n"
 			"- Any option except action that is not given will be treated as if it doesn't matter for a match.\n"
+			"- scope=pass blocks the whole matching pass (including what is not drawn as scene object), unless a filter\n"
+			"  without scope=pass comes first that could match objects of the pass, then it is applied per object.\n"
+			"  It can not be combined with handle or name. Be careful, it can block passes like PostProcessing too.\n"
 			, args->ArgV(0)
 		);
 		return false;
@@ -141,6 +161,14 @@ bool CSceneActionFilterList::ParseEx(advancedfx::ICommandArgs* args, Entry& outE
 		else if (!_stricmp("viewPass", key)) {
 			entry.ViewPass = sValue;
 		}
+		else if (!_stricmp("scope", key)) {
+			if (!_stricmp("pass", sValue.c_str())) entry.ScopePass = true;
+			else if (!_stricmp("object", sValue.c_str())) entry.ScopePass = false;
+			else {
+				advancedfx::Warning("Error: \"%s\" is not a valid scope (object|pass)!\n", sValue.c_str());
+				return false;
+			}
+		}
 		else if (!_stricmp("action", key)) {
 			if (!TryParseAction(sValue.c_str(), entry.Action)) {
 				advancedfx::Warning("Error: \"%s\" is not a valid action (draw|noDraw|zOnly)!\n", sValue.c_str());
@@ -159,6 +187,17 @@ bool CSceneActionFilterList::ParseEx(advancedfx::ICommandArgs* args, Entry& outE
 		return false;
 	}
 
+	if (entry.ScopePass && (
+		entry.UseHandle
+		|| entry.UseParentHandle
+		|| entry.UseRootHandle
+		|| !entry.className.empty()		
+		|| !entry.MaterialName.empty()
+	)) {
+		advancedfx::Warning("Error: scope=pass can not be combined with handle, parentHandle, rootHandle, className or name!\n");
+		return false;
+	}
+
 	outEntry = std::move(entry);
 	return true;
 }
@@ -170,7 +209,7 @@ void CSceneActionFilterList::Print() const {
 		std::string parentHandleStr = entry.UseParentHandle ? std::to_string(entry.ParentHandle) : "\\*";
 		std::string rootHandleStr = entry.UseRootHandle ? std::to_string(entry.RootHandle) : "\\*";
 		advancedfx::Message(
-			"id=%i, \"handle=%s\", \"parentHandle=%s\", \"rootHandle=%s\", \"className=%s\", \"name=%s\", \"viewName=%s\", \"viewPass=%s\", \"action=%s\"\n",
+			"id=%i, \"handle=%s\", \"parentHandle=%s\", \"rootHandle=%s\", \"className=%s\", \"name=%s\", \"viewName=%s\", \"viewPass=%s\", \"scope=%s\", \"action=%s\"\n",
 			id,
 			handleStr.c_str(),
 			parentHandleStr.c_str(),
@@ -179,6 +218,7 @@ void CSceneActionFilterList::Print() const {
 			entry.MaterialName.empty() ? "\\*" : entry.MaterialName.c_str(),
 			entry.ViewName.empty() ? "\\*" : entry.ViewName.c_str(),
 			entry.ViewPass.empty() ? "\\*" : entry.ViewPass.c_str(),
+			entry.ScopePass ? "pass" : "object",
 			ActionToString(entry.Action)
 		);
 		++id;
@@ -288,4 +328,11 @@ bool CActiveSceneActionFilter::Match(const SceneActionFilterQuery& query, SceneA
 
 	std::shared_lock<std::shared_mutex> lock(m_Mutex);
 	return m_List && m_List->Match(query, outAction);
+}
+
+bool CActiveSceneActionFilter::MatchPass(const SceneActionFilterQuery& query, SceneActionFilterAction& outAction) const {
+	if (!IsActive()) return false;
+
+	std::shared_lock<std::shared_mutex> lock(m_Mutex);
+	return m_List && m_List->MatchPass(query, outAction);
 }

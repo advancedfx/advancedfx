@@ -883,6 +883,14 @@ static bool GetPickerHidden(const CBaseSceneData* pSceneData) {
 	return g_ScenePicker.GetHidden(materialName, (uint32_t)(GetSceneDataEntityHandle(pSceneData).ToInt()));
 }
 
+static SceneObjectDrawPolicy SceneActionFilterActionToPolicy(SceneActionFilterAction action) {
+	switch (action) {
+	case SceneActionFilterAction::NoDraw: return SceneObjectDrawPolicy::Hide;
+	case SceneActionFilterAction::ZOnly: return SceneObjectDrawPolicy::DepthPassesOnly;
+	default: return SceneObjectDrawPolicy::Draw;
+	}
+}
+
 // Action filter of the stream (mirv_streams edit <name> actionFilter ...), takes precedence over everything else except the picker.
 static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBaseSceneData* pSceneData, SceneObjectDrawPolicy& outPolicy) {
 	if (!g_ActiveActionFilter.IsActive()) return false;
@@ -928,16 +936,38 @@ static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBa
 	SceneActionFilterAction action;
 	if (!g_ActiveActionFilter.Match(query, action)) return false;
 
-	switch (action) {
-	case SceneActionFilterAction::NoDraw: outPolicy = SceneObjectDrawPolicy::Hide; break;
-	case SceneActionFilterAction::ZOnly: outPolicy = SceneObjectDrawPolicy::DepthPassesOnly; break;
-	default: outPolicy = SceneObjectDrawPolicy::Draw; break;
-	}
+	outPolicy = SceneActionFilterActionToPolicy(action);
 	return true;
 }
 
+// Action filter scope=pass entries, decides the policy for the whole pass (scene layer context).
+static bool TryGetActionFilterPassPolicy(const SceneLayerContext& context, SceneObjectDrawPolicy& outPolicy) {
+	if (!g_ActiveActionFilter.IsActive()) return false;
+
+	std::string viewName;
+	std::string viewPass;
+
+	SceneActionFilterQuery query;
+
+	if (context.ViewName) {
+		viewName = context.ViewName;
+		query.ViewName = &viewName;
+	}
+	if (context.ViewPass) {
+		viewPass = context.ViewPass;
+		query.ViewPass = &viewPass;
+	}
+
+	SceneActionFilterAction action;
+	if (!g_ActiveActionFilter.MatchPass(query, action)) return false;
+
+	outPolicy = SceneActionFilterActionToPolicy(action);
+	return true;
+}
+
+// Policy of whole passes (by software command list), only Hide or DepthPassesOnly are stored.
 std::shared_timed_mutex g_BlockedSoftwareCommandListsMutex;
-std::set<void *> g_BlockedSoftwareCommandLists;
+std::map<void *, SceneObjectDrawPolicy> g_BlockedSoftwareCommandLists;
 std::atomic<void *> g_pPostProcessingCommandList = nullptr;
 
 void ClearThreadSceneLayerContexts(){
@@ -979,31 +1009,47 @@ void __fastcall new_RenderLayerDrawListPart(void * pSceneSystem, void * param_2,
 }
 */
 
-void BlockColorDepth(void * pThisSoftwareCommandList){
-	bool blocked = false;
-	{
-		std::unique_lock<std::shared_timed_mutex> lock(g_BlockedSoftwareCommandListsMutex);
-		blocked = !g_BlockedSoftwareCommandLists.emplace(pThisSoftwareCommandList).second;
+void BlockColorDepth(void * pThisSoftwareCommandList, SceneObjectDrawPolicy policy) {
+	switch (policy) {
+	default:
+	case SceneObjectDrawPolicy::Draw:
+		BlockColorDepth(pThisSoftwareCommandList, false, false);
+		break;
+	case SceneObjectDrawPolicy::DepthPassesOnly:
+		BlockColorDepth(pThisSoftwareCommandList, true, false);
+		break;
+	case SceneObjectDrawPolicy::Hide:
+		BlockColorDepth(pThisSoftwareCommandList, true, true);
+		break;
 	}
-	if(!blocked) BlockColorDepth(pThisSoftwareCommandList,true,true);
 }
 
-bool IsBlocked(void * pThisSoftwareCommandList) {
+// Sets the policy for the rest of the pass, Draw unblocks.
+void SetPassPolicy(void * pThisSoftwareCommandList, SceneObjectDrawPolicy policy) {
+	{
+		std::unique_lock<std::shared_timed_mutex> lock(g_BlockedSoftwareCommandListsMutex);
+		auto it = g_BlockedSoftwareCommandLists.find(pThisSoftwareCommandList);
+		SceneObjectDrawPolicy oldPolicy = it != g_BlockedSoftwareCommandLists.end() ? it->second : SceneObjectDrawPolicy::Draw;
+		if(oldPolicy == policy) return;
+		if(policy == SceneObjectDrawPolicy::Draw) g_BlockedSoftwareCommandLists.erase(it);
+		else g_BlockedSoftwareCommandLists[pThisSoftwareCommandList] = policy;
+	}
+	BlockColorDepth(pThisSoftwareCommandList, policy);
+}
+
+bool TryGetPassPolicy(void * pThisSoftwareCommandList, SceneObjectDrawPolicy & outPolicy) {
 	std::shared_lock<std::shared_timed_mutex> lock(g_BlockedSoftwareCommandListsMutex);
-	return g_BlockedSoftwareCommandLists.find(pThisSoftwareCommandList) != g_BlockedSoftwareCommandLists.end();
+	auto it = g_BlockedSoftwareCommandLists.find(pThisSoftwareCommandList);
+	if(it == g_BlockedSoftwareCommandLists.end()) return false;
+	outPolicy = it->second;
+	return true;
 }
 
 void CheckAndDo_Untoggle_BlockColorDepth(void * pThisSoftwareCommandList) {
 	if(g_bSceneFilterSystemActive) {
-		if(IsBlocked(pThisSoftwareCommandList)) {
-			bool blocked;
-			{
-				std::unique_lock<std::shared_timed_mutex> lock(g_BlockedSoftwareCommandListsMutex);
-				auto it = g_BlockedSoftwareCommandLists.find(pThisSoftwareCommandList);
-				blocked = it != g_BlockedSoftwareCommandLists.end();
-				if(blocked) g_BlockedSoftwareCommandLists.erase(it);
-			}
-			BlockColorDepth(pThisSoftwareCommandList,false,false);
+		SceneObjectDrawPolicy passPolicy;
+		if(TryGetPassPolicy(pThisSoftwareCommandList, passPolicy)) {
+			SetPassPolicy(pThisSoftwareCommandList, SceneObjectDrawPolicy::Draw);
 		}
 	}
 }
@@ -1090,22 +1136,30 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 		std::unique_lock<std::shared_mutex> lock(g_bSceneSystemMutex);
 
 		if(0 < g_iSceneFilterDebug) {
-			advancedfx::Message("AFXDEBUG: InitDrawingData layer=%s:%s flags=0x%08x unkFlags4=0x%08x\n",
+			advancedfx::Message("AFXDEBUG: InitDrawingData layer=%s:%s flags=0x%08x unkFlags4=0x%08x commandList=0x%p\n",
 				context.ViewName ? context.ViewName : "?",
 				context.ViewPass ? context.ViewPass : "?",
 				context.Flags,
-				unkFlags4
+				unkFlags4,
+				pCRenderContextDx11_SoftwareCommandList
 			);
 		}
 
+		SceneObjectDrawPolicy passPolicy = SceneObjectDrawPolicy::Draw;
 		if(g_OverlaysPolicy != SceneObjectDrawPolicy::Draw && context.ViewPass && (
 			0 == strcmp(context.ViewPass,"OverlaySmoke") // We want to let through "OverlaySmokeUpdate"
 			|| StringContains(context.ViewPass,"FlashbangOverlay")
 			|| StringContains(context.ViewPass,"Fade To Black")
 			)
-		) {	
-			BlockColorDepth(pCRenderContextDx11_SoftwareCommandList);
+		) {
+			passPolicy = SceneObjectDrawPolicy::Hide; // Overlays win over the action filter.
 		}
+		else if(!TryGetActionFilterPassPolicy(context, passPolicy)) {
+			passPolicy = SceneObjectDrawPolicy::Draw;
+		}
+
+		// Also unblocks, in case a command list is used for more than one pass.
+		SetPassPolicy(pCRenderContextDx11_SoftwareCommandList, passPolicy);
 	}
 }
 
@@ -1118,7 +1172,10 @@ void __fastcall new_DrawSceneData(void * pDrawingData, CBaseSceneData* pSceneDat
 
 		void * pCRenderContextDx11_SoftwareCommandList = ((void **)pDrawingData)[4];
 
-		if(IsBlocked(pCRenderContextDx11_SoftwareCommandList)) {
+		// Whole pass already decided (overlays / actionFilter scope=pass), only the picker can still hide more.
+		SceneObjectDrawPolicy passPolicy = SceneObjectDrawPolicy::Draw;
+		bool passBlocked = TryGetPassPolicy(pCRenderContextDx11_SoftwareCommandList, passPolicy);
+		if(passBlocked && !g_ScenePicker.IsActive()) {
 			org_DrawSceneData(pDrawingData, pSceneData);
 			return;
 		}
@@ -1142,33 +1199,18 @@ void __fastcall new_DrawSceneData(void * pDrawingData, CBaseSceneData* pSceneDat
 		if(GetPickerHidden(pSceneData)) {
 			policy = SceneObjectDrawPolicy::Hide;
 		}
+		else if(passBlocked) {
+			policy = passPolicy;
+		}
 		// Action filter is applied next, only if it falls through the general logic is used:
 		else if(!TryGetActionFilterPolicy(context, pSceneData, policy)) {
 			policy = GetSceneDataPolicy(filterClass, context, pSceneData);
 		}
 
-		switch (policy) {
-		default:
-		case SceneObjectDrawPolicy::Draw:
-			break;
-		case SceneObjectDrawPolicy::DepthPassesOnly:
-			BlockColorDepth(pCRenderContextDx11_SoftwareCommandList, true, false);
-			break;
-		case SceneObjectDrawPolicy::Hide:
-			BlockColorDepth(pCRenderContextDx11_SoftwareCommandList, true, true);
-			break;
-		}
+		if(policy != passPolicy) BlockColorDepth(pCRenderContextDx11_SoftwareCommandList, policy);
 		org_DrawSceneData(pDrawingData, pSceneData);
 		org_DrawCurrentPrimitives(pDrawingData); // Force draw to prevent merging and get correct state.
-		switch (policy) {
-		default:
-		case SceneObjectDrawPolicy::Draw:
-			break;
-		case SceneObjectDrawPolicy::DepthPassesOnly:
-		case SceneObjectDrawPolicy::Hide:
-			BlockColorDepth(pCRenderContextDx11_SoftwareCommandList, false, false);
-			break;
-		}
+		if(policy != passPolicy) BlockColorDepth(pCRenderContextDx11_SoftwareCommandList, passPolicy); // Restore pass policy.
 		return;
 	}
 
