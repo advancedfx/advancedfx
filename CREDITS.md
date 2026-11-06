@@ -450,8 +450,6 @@ https://github.com/wuXinnnn
 
 code
 
-Former lead programmer (2007 - 2025).
-
 https://github.com/Co1Swet
 
 #### Luis 'rechedev9' Reche
