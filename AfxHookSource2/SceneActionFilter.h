@@ -33,6 +33,7 @@ struct SceneActionFilterQuery {
 	/// <summary>Material name or nullptr if not available.</summary>
 	const std::string* MaterialName = nullptr;
 	const std::string* className = nullptr;
+	const std::string* ModelName = nullptr;
 	/// <summary>Raw entity handle number if available.</summary>
 	std::optional<uint32_t> EntityHandle;
 	std::optional<uint32_t> ParentEntityHandle;
@@ -76,6 +77,7 @@ private:
 		uint32_t ParentHandle = 0;
 		uint32_t RootHandle = 0;
 		// Wildcard masks (\* = wildcard, \\ = \), empty = don't care.
+		std::string ModelName;
 		std::string className;
 		std::string MaterialName;
 		std::string ViewName;

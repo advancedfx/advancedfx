@@ -897,6 +897,7 @@ static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBa
 
 	std::string className;
 	std::string materialName;
+	std::string modelName;
 	std::string viewName;
 	std::string viewPass;
 
@@ -923,6 +924,24 @@ static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBa
 				query.className = &className;
 			}
 		} 
+
+		if (pSceneData->sceneObject) {
+			SceneObjectFilterClass filterClass = SceneObjectFilterClass::Unknown;
+			if(void* desc = *(void**)((unsigned char*)pSceneData->sceneObject + g_SceneObject_pSceneObjectDesc_Offset)) {
+				void** vtable = *(void***)desc;
+				auto it = g_VtableToSceneObjectFilterClass.find(vtable);
+				if(it != g_VtableToSceneObjectFilterClass.end())
+					filterClass = it->second;
+			}
+
+			if (filterClass == SceneObjectFilterClass::Base || filterClass == SceneObjectFilterClass::Animatable) {
+				if (auto meshInstance = *(u_char**)((u_char*)(pSceneData->sceneObject) + 0x10)) {
+					auto model = **(u_char***)(meshInstance + 0x8);
+					modelName = *(const char**)(model + 0x8);
+					query.ModelName = &modelName;
+				}
+			}
+		}
 	}
 	if (context.ViewName) {
 		viewName = context.ViewName;
@@ -1580,6 +1599,9 @@ static std::string DescribeEntityHandle(uint32_t handle) {
 	auto parentHandle = ent->GetParentHandle();
 	const char* className = ent->GetClassName();
 
+	auto node = *(u_char**)((u_char*)ent + g_clientDllOffsets.C_BaseEntity.m_pGameSceneNode);
+	auto modelName = *(const char**)(node + g_clientDllOffsets.CSkeletonInstance.m_modelState + g_clientDllOffsets.CModelState.m_ModelName);
+
 	std::string result = "";
 	result += "parentHandle=";
 	result += parentHandle.IsValid() ? std::to_string(parentHandle.ToInt()) : "?";
@@ -1589,6 +1611,9 @@ static std::string DescribeEntityHandle(uint32_t handle) {
 	result += " ";
 	result += "\"className=";
 	result += className ? className : "?";
+	result += "\" ";
+	result += "\"modelName=";
+	result += modelName ? modelName : "?";
 	result += "\"";
 	return result;
 }

@@ -13,6 +13,7 @@ bool CSceneActionFilterList::Entry::Matches(const SceneActionFilterQuery& query)
 	if (UseParentHandle && !(query.ParentEntityHandle.has_value() && *query.ParentEntityHandle == ParentHandle)) return false;
 	if (UseHandle && !(query.EntityHandle.has_value() && *query.EntityHandle == Handle)) return false;
 	if (!className.empty() && !(query.className && StringWildCard1Matched(className.c_str(), query.className->c_str()))) return false;
+	if (!ModelName.empty() && !(query.ModelName && StringWildCard1Matched(ModelName.c_str(), query.ModelName->c_str()))) return false;
 	if (!MaterialName.empty() && !(query.MaterialName && StringWildCard1Matched(MaterialName.c_str(), query.MaterialName->c_str()))) return false;
 	return MatchesView(query);
 }
@@ -31,6 +32,7 @@ int CSceneActionFilterList::Entry::Compare(const Entry& o) const {
 	if (UseParentHandle && ParentHandle != o.ParentHandle) return ParentHandle > o.ParentHandle ? 1 : -1;
 	if (UseHandle && Handle != o.Handle) return Handle > o.Handle ? 1 : -1;
 	if (int cmp = className.compare(o.className)) return cmp;
+	if (int cmp = ModelName.compare(o.ModelName)) return cmp;
 	if (int cmp = MaterialName.compare(o.MaterialName)) return cmp;
 	if (int cmp = ViewName.compare(o.ViewName)) return cmp;
 	if (int cmp = ViewPass.compare(o.ViewPass)) return cmp;
@@ -104,6 +106,7 @@ bool CSceneActionFilterList::ParseEx(advancedfx::ICommandArgs* args, Entry& outE
 			"\"parentHandle=<handleNumber>\" (of entity)\n"
 			"\"rootHandle=<handleNumber>\" (of entity)\n"
 			"\"className=<wildCardString>\" (of entity)\n"
+			"\"modelName=<wildCardString>\" (of entity)\n"
 			"\"name=<wildCardString>\" (of material)\n"
 			"\"viewName=<wildCardString>\" (of scene layer context)\n"
 			"\"viewPass=<wildCardString>\" (of scene layer context)\n"
@@ -152,6 +155,9 @@ bool CSceneActionFilterList::ParseEx(advancedfx::ICommandArgs* args, Entry& outE
 		else if (!_stricmp("className", key)) {
 			entry.className = sValue;
 		}
+		else if (!_stricmp("modelName", key)) {
+			entry.ModelName = sValue;
+		}
 		else if (!_stricmp("name", key)) {
 			entry.MaterialName = sValue;
 		}
@@ -192,9 +198,10 @@ bool CSceneActionFilterList::ParseEx(advancedfx::ICommandArgs* args, Entry& outE
 		|| entry.UseParentHandle
 		|| entry.UseRootHandle
 		|| !entry.className.empty()		
+		|| !entry.ModelName.empty()		
 		|| !entry.MaterialName.empty()
 	)) {
-		advancedfx::Warning("Error: scope=pass can not be combined with handle, parentHandle, rootHandle, className or name!\n");
+		advancedfx::Warning("Error: scope=pass can not be combined with handle, parentHandle, rootHandle, className, modelName or name!\n");
 		return false;
 	}
 
@@ -209,13 +216,14 @@ void CSceneActionFilterList::Print() const {
 		std::string parentHandleStr = entry.UseParentHandle ? std::to_string(entry.ParentHandle) : "\\*";
 		std::string rootHandleStr = entry.UseRootHandle ? std::to_string(entry.RootHandle) : "\\*";
 		advancedfx::Message(
-			"id=%i, \"handle=%s\", \"parentHandle=%s\", \"rootHandle=%s\", \"className=%s\", \"name=%s\", \"viewName=%s\", \"viewPass=%s\", \"scope=%s\", \"action=%s\"\n",
+			"id=%i, \"handle=%s\", \"parentHandle=%s\", \"rootHandle=%s\", \"className=%s\", \"name=%s\", \"modelName=%s\", \"viewName=%s\", \"viewPass=%s\", \"scope=%s\", \"action=%s\"\n",
 			id,
 			handleStr.c_str(),
 			parentHandleStr.c_str(),
 			rootHandleStr.c_str(),
 			entry.className.empty() ? "\\*" : entry.className.c_str(),
 			entry.MaterialName.empty() ? "\\*" : entry.MaterialName.c_str(),
+			entry.ModelName.empty() ? "\\*" : entry.ModelName.c_str(),
 			entry.ViewName.empty() ? "\\*" : entry.ViewName.c_str(),
 			entry.ViewPass.empty() ? "\\*" : entry.ViewPass.c_str(),
 			entry.ScopePass ? "pass" : "object",

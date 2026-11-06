@@ -39,6 +39,14 @@ struct ClientDllOffsets_t {
         ptrdiff_t m_vecAbsOrigin = 0; // VectorWS
 	} CGameSceneNode;
 
+	struct CSkeletonInstance {
+		ptrdiff_t m_modelState = 0; // CModelState
+	} CSkeletonInstance;
+
+	struct CModelState {
+		ptrdiff_t m_ModelName = 0; // CUtlSymbolLarge
+	} CModelState;
+
 	struct C_BaseCSGrenadeProjectile {
 		ptrdiff_t m_bCanCreateGrenadeTrail = 0; // bool
 		ptrdiff_t m_nSnapshotTrajectoryEffectIndex = 0; // ParticleIndex_t
