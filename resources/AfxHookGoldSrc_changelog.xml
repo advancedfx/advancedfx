@@ -6,6 +6,17 @@
 
 <release>
 <name>AfxHookGoldSrc</name>
+<version>2.26.0</version>
+<time>2026-11-06T23:30Z</time>
+<changes>
+<change type="updated">Breaking change: mirv_streams ffmpeg options now use {{ for { and }} for } (was { and }). Double \ is no longer turned into single \, so use a single \ now.</change>
+<change type="added">Added {AFX_OUTPUT_FILE} to mirv_streams ffmpeg options, and the default options and afxFfmpeg* presets now use it. {AFX_STREAM_PATH} is now the folder of the output file. See more info on the wiki page</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookGoldSrc</name>
 <version>2.25.4</version>
 <time>2026-10-08T13:56Z</time>
 <changes>

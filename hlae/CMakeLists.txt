@@ -3,8 +3,8 @@ cmake_minimum_required (VERSION 3.24)
 project ("hlae")
 
 set(hlae_VERSION_MAJOR 2)
-set(hlae_VERSION_MINOR 192)
-set(hlae_VERSION_PATCH 10)
+set(hlae_VERSION_MINOR 193)
+set(hlae_VERSION_PATCH 0)
 set(hlae_VERSION_REVISON 0)
 
 file(GLOB_RECURSE HLAE_INPUTS CONFIGURE_DEPENDS
