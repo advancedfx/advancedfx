@@ -20,8 +20,8 @@
 <change type="added">Added mirv_streams preview</change>
 <change type="added">Added mirv_streams edit streamName actionFilter</change>
 <change type="added">Added mirv_streams picker</change>
-<change type="updated">Colored smokes in mirv_colors now retain their color while fading out</change>
-<change type="fixed">Fixed mirv_streams record start behaviour when fps is not set, errors no longer spammed.</change>
+<change type="updated">Colored smokes (with mirv_colors) now retain their color while fading out.</change>
+<change type="fixed">Fixed mirv_streams record start behaviour when fps is not set, no more error spam.</change>
 <change type="added">Added getParentHandle() and getRootHandle() to mirv-script entities.</change>
 <change type="added">Added mirv_script_record_name mirv-script snippet, which updates recording paths to a more convenient layout using new templating system. See example on wiki page.</change>
 <change type="updated">Increased highest entity index to 0x7FFF, related to mirv_listentities and mirv-script getHighestEntityIndex()</change>
