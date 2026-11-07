@@ -11,14 +11,14 @@
 <changes>
 <change type="updated">Breaking change: mirv_streams ffmpeg options now use {{ for { and }} for } (was { and }). Double \ is no longer turned into single \, so use a single \ now.</change>
 <change type="added">Added {AFX_OUTPUT_FILE} to mirv_streams ffmpeg options, and the default options and afxFfmpeg* presets now use it. {AFX_STREAM_PATH} is now the folder of the output file. See more info on the wiki page</change>
-<change type="added">Added mirv_streams output path templates (#1173): mirv_streams record take, record cam path, record campath path, record startMovieWavPath and settings edit <name> path. See more info on the wiki page</change>
+<change type="added">Added mirv_streams output path templates (#1173): mirv_streams record take, record cam path, record campath path, record startMovieWavPath and settings edit settingsName path. See more info on the wiki page</change>
 <change type="added">Added mirv_streams record screen name to set {STREAM_NAME} for the screen recording (default: screen).</change>
 <change type="added">Added more prores ffmpeg presets, see details on wiki.</change>
 <change type="updated">Changed afxFfmpegProres and afxFfmpegProresAlpha to use -q:v 9. Now it's faster and produce smaller files, but not bitrate compliant with Apple spec. More details on wiki page.</change>
 <change type="fixed">Fixed possible race condition in mirv_streams record startMovieWav when determining the WAV file path (in AfxHookSource, non CS:GO games only).</change>
-<change type="added">Added mirv_streams edit <stream> scopeAction</change>
+<change type="added">Added mirv_streams edit streamName scopeAction</change>
 <change type="added">Added mirv_streams preview</change>
-<change type="added">Added mirv_streams edit <stream> actionFilter</change>
+<change type="added">Added mirv_streams edit streamName actionFilter</change>
 <change type="added">Added mirv_streams picker</change>
 <change type="updated">Colored smokes in mirv_colors now retain their color while fading out</change>
 <change type="fixed">Fixed mirv_streams record start behaviour when fps is not set, errors no longer spammed.</change>
