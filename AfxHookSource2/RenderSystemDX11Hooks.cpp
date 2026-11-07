@@ -2623,10 +2623,17 @@ public:
     }
 
     virtual void OnCallback(void) {
-        if (auto pDeviceContext = g_RenderCommands.RenderThread_GetContext()) {
-            g_NoDraw.Block(pDeviceContext, m_Color, m_Depth);
+        // Can't use g_RenderCommands.RenderThread_GetContext() here, it's not set yet before the
+        // "Clear Color Depth Stencil" of "Player 0", so that would not block e.g. the shadow views.
+        if (g_pDevice) {
+            ID3D11DeviceContext * pDeviceContext = nullptr;
+            g_pDevice->GetImmediateContext(&pDeviceContext);
+            if (pDeviceContext) {
+                g_NoDraw.Block(pDeviceContext, m_Color, m_Depth);
+                pDeviceContext->Release();
+            }
         }
-        delete this;        
+        delete this;
     }
 
 private:
