@@ -444,14 +444,6 @@ code
 
 https://github.com/wuXinnnn
 
-#### Co1Swet
-
-2026-06-11 - 2026-06-11
-
-code
-
-https://github.com/Co1Swet
-
 #### Luis 'rechedev9' Reche
 
 2026-07-10 - 2026-07-10
@@ -467,6 +459,14 @@ https://github.com/rechedev9
 code
 
 https://github.com/kaputlog
+
+#### Co1Swet
+
+2026-11-06 - 2026-11-07
+
+code
+
+https://github.com/Co1Swet
 
 ## Donors
 

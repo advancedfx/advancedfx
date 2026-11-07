@@ -27,6 +27,7 @@
 <change type="updated">Increased highest entity index to 0x7FFF, related to mirv_listentities and mirv-script getHighestEntityIndex()</change>
 <change type="fixed">Fixed mirv.events type definitions in mirv-script</change>
 <change type="fixed">Fixed undefined behaviour in interpolation_amount_get. Thanks @Co1Swet</change>
+<change type="fixed">Fixed Source2EngineToClient001::ExecuteClientCmd interface. Thanks @Co1Swet</change>
 </changes>
 </release>
 
