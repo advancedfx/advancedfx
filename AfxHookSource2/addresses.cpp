@@ -26,6 +26,18 @@ AFXADDR_DEF(cs2_scenesystem_CAggregateSceneObjectDesc_vtable)
 AFXADDR_DEF(cs2_scenesystem_CSkyBoxObjectDesc_vtable)
 AFXADDR_DEF(cs2_scenesystem_C6FaceSkyboxObjectDesc_vtable)
 AFXADDR_DEF(cs2_scenesystem_CProjectedDecalSceneObjectDesc_vtable)
+AFXADDR_DEF(cs2_scenesystem_CreateRenderContextPtr1)
+AFXADDR_DEF(cs2_scenesystem_CreateRenderContextPtr2)
+
+AFXADDR_DEF(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_vtable)
+AFXADDR_DEF_INVALID(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_UnlockDynamicConstantBuffer_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_Commit_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx)
+
+AFXADDR_DEF(cs2_schemasystem_g_SchemaSystem)
+
+AFXADDR_DEF(cs2_filesystem_CFileSystem_Stdio_AddSearchPath)
 
 AFXADDR_DEF(cs2_materialsystem_CMaterial2_FindParam)
 AFXADDR_DEF(cs2_materialsystem_CMaterial2_Update)
@@ -341,6 +353,65 @@ void Addresses_InitSceneSystemDll(AfxAddr sceneSystemDll) {
 	if (AfxAddr addr = FindClassVtable((HMODULE)sceneSystemDll, ".?AVCProjectedDecalSceneObjectDesc@@", 0, 0))
 		AFXADDR_SET(cs2_scenesystem_CProjectedDecalSceneObjectDesc_vtable, addr);
 	else ADDR_MISSING(cs2_scenesystem_CProjectedDecalSceneObjectDesc_vtable);
+
+	// Second reference to "WARNING: Trying to create a CRenderContextPtr without a valid context.\n" (fn with 4+1 params)
+	if (AfxAddr addr = FindPattern(textRange, "40 53 56 57 48 83 ec 20 49 8b 00 49 8b d8 48 8b f9 45 33 c0 48 8b cb 49 8b f1 ff 90 e8 01 00 00"))
+		AFXADDR_SET(cs2_scenesystem_CreateRenderContextPtr1, addr);
+	else ADDR_MISSING(cs2_scenesystem_CreateRenderContextPtr1);
+
+	// See FUN_18004aff0 doc/notes_cs2/sc_dump_lists.txt.
+	// First reference to "WARNING: Trying to create a CRenderContextPtr without a valid context.\n" (fn with 3+1 params)
+	if (AfxAddr addr = FindPattern(textRange, "40 55 53 57 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 80 65 ?? ?? 33 C0"))
+		AFXADDR_SET(cs2_scenesystem_CreateRenderContextPtr2, addr);
+	else ADDR_MISSING(cs2_scenesystem_CreateRenderContextPtr2);
+
+	missing.Report();
+}
+
+void Addresses_InitRenderSystemDx11Dll(AfxAddr renderSystemDx11Dll) {
+	CMissingAddrs missing("rendersystemdx11.dll");
+
+	// See MirvColors.cpp "g_Original_renderSmokes"
+	//     buf = (**(code **)(*param_2 + 0x100))(param_2, 0x9c0, &data);   // Lock, returns a handle
+	//     ... loop
+	//     (**(code **)(*param_2 + 0x108))(param_2, buf, 0x9c0);           // Unlock, gets the handle
+	if (AfxAddr addr = FindClassVtable((HMODULE)renderSystemDx11Dll, ".?AVCRenderContextDx11_SoftwareCommandLists@@", 0, 0))
+		AFXADDR_SET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_vtable, addr);
+	else ADDR_MISSING(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_vtable);
+	AFXADDR_SET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer_vtable_idx, 32);
+	AFXADDR_SET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_UnlockDynamicConstantBuffer_vtable_idx, 33);
+
+	AFXADDR_SET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_Commit_vtable_idx, 11);
+	AFXADDR_SET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx, 142);
+
+	missing.Report();
+}
+
+void Addresses_InitSchemaSystemDll(AfxAddr schemaSystemDll) {
+	MemRange textRange = GetTextRange(schemaSystemDll);
+	CMissingAddrs missing("schemasystem.dll");
+
+	// 18000d8a7 48  89  05       MOV        qword ptr [DAT_180076730 ],RAX
+	//           82  8e  06  00
+	// 18000d8ae 4c  8d  0d       LEA        R9,[s_schema_list_bindings_<substring>_1800548   = "schema_list_bindings <substri
+	//           0b  70  04  00
+	// 18000d8b5 33  c0           XOR        EAX ,EAX
+	// 18000d8b7 48  c7  05       MOV        qword ptr [DAT_18007675c ],0xc80000
+	//           9a  8e  06
+	//           00  00  00
+	if (AfxAddr addr = FindPattern(textRange, "48 89 05 ?? ?? ?? ?? 4C 8D 0D ?? ?? ?? ?? 33 C0 48 C7 05"))
+		AFXADDR_SET(cs2_schemasystem_g_SchemaSystem, ResolveRel32(addr, 3, 7));
+	else ADDR_MISSING(cs2_schemasystem_g_SchemaSystem);
+
+	missing.Report();
+}
+
+void Addresses_InitFileSystemStdioDll(AfxAddr fileSystemStdioDll) {
+	CMissingAddrs missing("filesystem_stdio.dll");
+
+	if (AfxAddr addr = FindVtableFn(fileSystemStdioDll, ".?AVCFileSystem_Stdio@@", 31))
+		AFXADDR_SET(cs2_filesystem_CFileSystem_Stdio_AddSearchPath, addr);
+	else ADDR_MISSING(cs2_filesystem_CFileSystem_Stdio_AddSearchPath);
 
 	missing.Report();
 }

@@ -2034,15 +2034,18 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 
 		g_H_FileSystem_stdio = hModule;
 
-		org_AddSearchPath = (AddSearchPath_t)getVTableFn(hModule, 31, ".?AVCFileSystem_Stdio@@");
-		if (0 == org_AddSearchPath) ErrorBox(MkErrStr(__FILE__, __LINE__));
+		Addresses_InitFileSystemStdioDll((AfxAddr)hModule);
 
-		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
-		
-		DetourAttach(&(PVOID&)org_AddSearchPath, new_AddSearchPath);
-		
-		if(NO_ERROR != DetourTransactionCommit()) ErrorBox("Failed to detour filesystem_stdio functions.");
+		if (AFXADDR_GET(cs2_filesystem_CFileSystem_Stdio_AddSearchPath)) {
+			org_AddSearchPath = (AddSearchPath_t)AFXADDR_GET(cs2_filesystem_CFileSystem_Stdio_AddSearchPath);
+
+			DetourTransactionBegin();
+			DetourUpdateThread(GetCurrentThread());
+
+			DetourAttach(&(PVOID&)org_AddSearchPath, new_AddSearchPath);
+
+			if(NO_ERROR != DetourTransactionCommit()) ErrorBox("Failed to detour filesystem_stdio functions.");
+		}
 		
 		// g_Import_filesystem_stdio.Apply(hModule);
 	}
@@ -2098,6 +2101,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	{
 		bFirstRenderSystemDX11 = false;
 
+		Addresses_InitRenderSystemDx11Dll((AfxAddr)hModule);
+
 		Hook_RenderSystemDX11((void*)hModule);
 	}
 	else if(bFirstClient && StringEndsWithW(lpLibFileName, L"csgo\\bin\\win64\\client.dll"))
@@ -2139,6 +2144,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	{
 		bFirstSchemaSystem = false;
 		g_H_SchemaSystem = hModule;
+		Addresses_InitSchemaSystemDll((AfxAddr)hModule);
 	}
 	else if(bFirstResourceSystem && StringEndsWithW(lpLibFileName, L"resourcesystem.dll"))
 	{

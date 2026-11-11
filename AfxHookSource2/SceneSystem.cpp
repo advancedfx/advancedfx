@@ -1117,7 +1117,7 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 
 	std::call_once(g_SoftwareCommandListCommitDetourOnce, [pCRenderContextDx11_SoftwareCommandList]() {
 		void** vtable = *(void***)pCRenderContextDx11_SoftwareCommandList;
-		org_SoftwareCommandList_Commit = (SoftwareCommandList_Commit_t)vtable[11];
+		org_SoftwareCommandList_Commit = (SoftwareCommandList_Commit_t)vtable[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_Commit_vtable_idx)];
 
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());

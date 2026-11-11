@@ -14,6 +14,7 @@
 
 #include "RenderCommands.h"
 #include "StreamSettings.h"
+#include "addresses.h"
 
 #include "../shared/AfxDetours.h"
 #include "../shared/binutils.h"
@@ -2641,11 +2642,10 @@ private:
     bool m_Depth;
 };
 
-const size_t g_SoftwareCommandList_QueueCallback_Offset = 142;
 
 bool BlockColorDepth(void* pCRenderContextDx11_SoftwareCommandList, bool bColor, bool bDepth) {
     if (pCRenderContextDx11_SoftwareCommandList) {
-        auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+        auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx)];
         fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBlockBuffers(bColor, bDepth));
         return true;
     }
@@ -3226,7 +3226,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
 		//   }
 
         if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderConStextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderConStextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx)];
             va_list args;
             va_start(args, fmt);
             fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CRenderSystemConsolePrint(1, saveFmt,args));
@@ -3242,19 +3242,19 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
         if(pszArg0 && 0 == strcmp("Player 0",pszArg0) && pszArg1) {
             if (0 == strcmp("Clear Color Depth Stencil", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx)];
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeClear());
                 }
             }
             else if (0 == strcmp("ClearSmokeTargets (4)", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx)];
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeMaybeDrawSmoke());
                 }
             }
             else if (0 == strcmp("ClearSmokeTargets", pszArg1)) {
                 if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+                    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx)];
                     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackAfterMaybeSmokeDrawn());
                 }
             }
@@ -3266,7 +3266,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
         const char * pszArg0 = va_arg(args, const char *);
         if(pszArg0 && 0 == strcmp("CSGOHud",pszArg0)) {
             if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+                auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx)];
                 fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforeCSGOHud());
             }
         }
@@ -3275,12 +3275,12 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr1(unsigned char
 }
 
 void QueueCallbackBeforePostProcessing(void* pCRenderContextDx11_SoftwareCommandList) {
-    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx)];
     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforePostProcessing());
 }
 
 void QueueCallbackAfterPostProcessing(void* pCRenderContextDx11_SoftwareCommandList) {
-    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx)];
     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackAfterPostProcessing());
 }
 
@@ -3300,7 +3300,7 @@ public:
 };
 
 void QueueCallbackBeforePanoramaEngineConsole(void* pCRenderContextDx11_SoftwareCommandList) {
-    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+    auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx)];
     fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackBeforePanoramaEngineConsole());
 }
 
@@ -3313,7 +3313,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char
 
     if (fmt && 0 == strcmp(fmt, "UpdateBuffers")) {
         if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx)];
             fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CAfxRenderCallbackUpdateBuffers());
         }
     }
@@ -3322,7 +3322,7 @@ unsigned char * __fastcall New_SceneSystem_CreateRenderContextPtr2(unsigned char
         const char * saveFmt = fmt ? fmt : "[nullptr]";
 
         if (void* pCRenderContextDx11_SoftwareCommandList = *(void**)param_1) {
-            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[g_SoftwareCommandList_QueueCallback_Offset];
+            auto fnQueueCallback = (void(__fastcall*)(void* pCRenderContextDx11_SoftwareCommandList, void* pCallback))(*(void***)pCRenderContextDx11_SoftwareCommandList)[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandList_QueueCallback_vtable_idx)];
             va_list args;
             va_start(args, fmt);
             fnQueueCallback(pCRenderContextDx11_SoftwareCommandList, new CRenderSystemConsolePrint(2, saveFmt, args));
@@ -3396,27 +3396,10 @@ void Hook_RenderSystemDX11(void * hModule) {
             } else ErrorBox("Failed to get d3d11.dll module handle.");
         } else ErrorBox("Failed rendersystemdx11 import hooks.");
 
-        Afx::BinUtils::MemRange textRange = Afx::BinUtils::MemRange::FromEmpty();
-        Afx::BinUtils::MemRange dataRange = Afx::BinUtils::MemRange::FromEmpty();
-        {
-            Afx::BinUtils::ImageSectionsReader sections((HMODULE)hModule);
-            if(!sections.Eof()) {
-                textRange = sections.GetMemRange();
-                sections.Next();
-                if(!sections.Eof()){
-                    dataRange = sections.GetMemRange();
-                }
-            }
-        }
-
-        // See MirvColors.cpp "g_Original_renderSmokes"
-		//     buf = (**(code **)(*param_2 + 0x100))(param_2, 0x9c0, &data);   // Lock, returns a handle
-		//     ... loop
-		//     (**(code **)(*param_2 + 0x108))(param_2, buf, 0x9c0);           // Unlock, gets the handle
-		if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable((HMODULE)hModule,".?AVCRenderContextDx11_SoftwareCommandLists@@", 0, 0x0)) {
-			AfxDetourPtr(&(vtable[32]),New_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer,(PVOID*)&g_Old_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer);
-			AfxDetourPtr(&(vtable[33]),New_CRenderContextDx11_SoftwareCommandLists_UnlockDynamicConstantBuffer,(PVOID*)&g_Old_CRenderContextDx11_SoftwareCommandLists_UnlockDynamicConstantBuffer);
-		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+		if(void ** vtable = (void**)AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_vtable)) {
+			AfxDetourPtr(&(vtable[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer_vtable_idx)]),New_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer,(PVOID*)&g_Old_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer);
+			AfxDetourPtr(&(vtable[AFXADDR_GET(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_UnlockDynamicConstantBuffer_vtable_idx)]),New_CRenderContextDx11_SoftwareCommandLists_UnlockDynamicConstantBuffer,(PVOID*)&g_Old_CRenderContextDx11_SoftwareCommandLists_UnlockDynamicConstantBuffer);
+		}
     }
 
 }
@@ -3460,34 +3443,21 @@ void Hook_SceneSystem(void * hModule) {
                 ErrorBox(MkErrStr(__FILE__, __LINE__));
         }*/
 
-        // Second reference to "WARNING: Trying to create a CRenderContextPtr without a valid context.\n" (fn with 4+1 params)
-        {
-            Afx::BinUtils::MemRange result = FindPatternString(textRange, "40 53 56 57 48 83 ec 20 49 8b 00 49 8b d8 48 8b f9 45 33 c0 48 8b cb 49 8b f1 ff 90 e8 01 00 00");
-            if (!result.IsEmpty()) {
-                g_Old_SceneSystem_CreateRenderContextPtr1 = (SceneSystem_CreateRenderContextPtr1_t)result.Start;	
-                DetourTransactionBegin();
-                DetourUpdateThread(GetCurrentThread());
-                DetourAttach(&(PVOID&)g_Old_SceneSystem_CreateRenderContextPtr1, New_SceneSystem_CreateRenderContextPtr1);
-                if(NO_ERROR != DetourTransactionCommit())
-                    ErrorBox(MkErrStr(__FILE__, __LINE__));
-            }
-            else
+        if (AFXADDR_GET(cs2_scenesystem_CreateRenderContextPtr1)) {
+            g_Old_SceneSystem_CreateRenderContextPtr1 = (SceneSystem_CreateRenderContextPtr1_t)AFXADDR_GET(cs2_scenesystem_CreateRenderContextPtr1);
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            DetourAttach(&(PVOID&)g_Old_SceneSystem_CreateRenderContextPtr1, New_SceneSystem_CreateRenderContextPtr1);
+            if(NO_ERROR != DetourTransactionCommit())
                 ErrorBox(MkErrStr(__FILE__, __LINE__));
         }
 
-        // See FUN_18004aff0 doc/notes_cs2/sc_dump_lists.txt.
-        // First reference to "WARNING: Trying to create a CRenderContextPtr without a valid context.\n" (fn with 3+1 params)
-        {
-            Afx::BinUtils::MemRange result = FindPatternString(textRange, "40 55 53 57 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 80 65 ?? ?? 33 C0");
-            if (!result.IsEmpty()) {
-                g_Old_SceneSystem_CreateRenderContextPtr2 = (SceneSystem_CreateRenderContextPtr2_t)result.Start;	
-                DetourTransactionBegin();
-                DetourUpdateThread(GetCurrentThread());
-                DetourAttach(&(PVOID&)g_Old_SceneSystem_CreateRenderContextPtr2, New_SceneSystem_CreateRenderContextPtr2);
-                if(NO_ERROR != DetourTransactionCommit())
-                    ErrorBox(MkErrStr(__FILE__, __LINE__));
-            }
-            else
+        if (AFXADDR_GET(cs2_scenesystem_CreateRenderContextPtr2)) {
+            g_Old_SceneSystem_CreateRenderContextPtr2 = (SceneSystem_CreateRenderContextPtr2_t)AFXADDR_GET(cs2_scenesystem_CreateRenderContextPtr2);
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            DetourAttach(&(PVOID&)g_Old_SceneSystem_CreateRenderContextPtr2, New_SceneSystem_CreateRenderContextPtr2);
+            if(NO_ERROR != DetourTransactionCommit())
                 ErrorBox(MkErrStr(__FILE__, __LINE__));
         }
         
