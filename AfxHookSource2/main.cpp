@@ -2195,6 +2195,7 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	else if(bFirstPanorama && StringEndsWithW(lpLibFileName, L"panorama.dll"))
 	{
 		bFirstPanorama = false;
+		Addresses_InitPanoramaDll((AfxAddr)hModule);
 		g_Import_panorama.Apply(hModule);
 		HookPanorama(hModule);
 	}

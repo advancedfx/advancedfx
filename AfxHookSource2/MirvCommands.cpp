@@ -5,6 +5,7 @@
 
 #include "SceneSystem.h"
 #include "SchemaSystem.h"
+#include "addresses.h"
 
 #include <algorithm>
 
@@ -447,86 +448,30 @@ CON_COMMAND(mirv_glow, "Manage glow drawing.")
     );
 }
 
-// we probably need addresses.cpp at this point
 typedef void* (__fastcall * ForceUpdateSkybox_t)(void* This);
 extern ForceUpdateSkybox_t org_ForceUpdateSkybox;
 
-extern uint32_t g_Skybox_UnkPtr_Offset;
+bool getAddressesFromClient() {
+	if (0 == AFXADDR_GET(cs2_client_OnFlashMaxAlphaChanged)
+		|| 0 == AFXADDR_GET(cs2_client_EOM)
+		|| 0 == AFXADDR_GET(cs2_client_SetGlowProps))
+		return false;
 
-bool getAddressesFromClient(HMODULE clientDll) {
-	bool res = true;
+	g_Original_OnFlashMaxAlphaChanged = (g_Original_OnFlashMaxAlphaChanged_t)AFXADDR_GET(cs2_client_OnFlashMaxAlphaChanged);
+	g_Original_EOM = (g_Original_EOM_t)AFXADDR_GET(cs2_client_EOM);
+	g_Original_setGlowProps = (g_Original_setGlowProps_t)AFXADDR_GET(cs2_client_SetGlowProps);
 
-	// near "OnFlashMaxAlphaChanged"
-	// checks for m_flFlashMaxAlpha in param_2 and sets it to param_3 if it's not the same
-	g_Original_OnFlashMaxAlphaChanged = (g_Original_OnFlashMaxAlphaChanged_t)getAddress(clientDll, "F3 41 0F 10 08 F3 0F 10 82 ?? ?? ?? ?? 0F 2E C1 7A ?? 74 ??");
-	if(g_Original_OnFlashMaxAlphaChanged == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		res = false;
-	}
+	// Optional, hooked when available:
+	org_shouldGlow = (org_shouldGlow_t)AFXADDR_GET(cs2_client_CGlowProperty_ShouldGlow);
+	org_ForceUpdateSkybox = (ForceUpdateSkybox_t)AFXADDR_GET(cs2_client_C_EnvSky_ForceUpdateSkybox);
 
-	// called in func with "cs_win_panel_match", "cs_game_disconnected", "cs_match_end_restart","nextlevel_changed","hltv_replay" in the end inside if statement
-	// has strings "team_intro_end", "hide_deathpanel"
-	size_t g_Original_EOM_addr = getAddress(clientDll, "48 8B C4 88 50 ?? 55 41 56 48 8B EC 48 83 EC ?? 80 79 ?? 00 4C 8B F1");
-	if(g_Original_EOM_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		res = false;
-	}
-
-	// See where spec_show_xray is checked, has offsets to glowProperty
-	// Also called first in 242 vtable function for C_BaseModelEntity and other 100+ entities with m_Glow (CGlowProperty)
-	size_t g_Original_setGlowProps_addr = getAddress(clientDll, "48 89 5C 24 ?? 57 48 83 EC ?? 48 8B 05 ?? ?? ?? ?? 48 8B D9 F3 0F 10 41");
-	if (g_Original_setGlowProps_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		res = false;
-	}
-
-	g_Original_EOM = (g_Original_EOM_t)(g_Original_EOM_addr);
-	g_Original_setGlowProps = (g_Original_setGlowProps_t)(g_Original_setGlowProps_addr);
-
-	// C_BaseModelEntity vtable 242 it should have 2 function calls with m_Glow (CGlowProperty)
-	// go to second function call, there go to first function call
-	// that function should return m_bGlowing of CGlowProperty
-
-	if (auto addr = getAddress(clientDll, "E8 ?? ?? ?? ?? 45 33 F6 84 C0 0F 84")) {
-		org_shouldGlow = (org_shouldGlow_t)(addr + 5 + *(int32_t*)(addr + 1));
-	} else ErrorBox(MkErrStr(__FILE__, __LINE__)); 
-
-   // Has offset to material of skybox (other members too), pCSceneSystem and it's function to update skybox.
-   //
-   // Could be found if you see callstack for function of vtable for CSceneSystem (currently 39th)
-   // To trigger update just skip demo backwards or load level.
-   //
-   // Also it's referenced in 10th vtable function of C_EnvSky (we are getting it from there)
-   //
-   // 1801c02cb 48  8b  0d       MOV        RCX, qword ptr [DAT_182025518] // CSceneSystem
-   //           46  52  e6  01
-   // 1801c02d2 48  8d  55  30   LEA        RDX => local_res8, [RBP + 0x30]
-   // 1801c02d6 48  8b  01       MOV        RAX, qword ptr [RCX]
-   // 1801c02d9 4c  8b  88       MOV        R9, qword ptr [RAX + 0x138] // 39th function of CSceneSystem
-   //           38  01  00  00
-   // 1801c02e0 48  8b  87       MOV        RAX, qword ptr [RDI + 0xec0] // offset to m_hSkyMaterial of C_EnvSky
-   //           c0  0e  00  00
-   // 1801c02e7 48  89  45  30   MOV        qword ptr [RBP + local_res8], RAX
-   // 1801c02eb 41  ff  d1       CALL       R9
-
-	if (auto addr = getAddress(clientDll, "33 DB 48 8D 05 ?? ?? ?? ?? 48 8B CF 48 89 44 24 ??")) {
-		auto offset = *(int32_t*)(addr + 5);
-		org_ForceUpdateSkybox = (ForceUpdateSkybox_t)(addr + 2 + 7 + offset);
-	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-	// Must hit the lea inside ForceUpdateSkybox (C_EnvSky pointer field, 0x10E8 in 2026-09-23 build).
-	// The shorter "48 8D B3 ?? ?? ?? ?? 48 8B 0E" first matches an unrelated function there (offset 0x118).
-	if (auto addr = getAddress(clientDll, "48 8D B3 ?? ?? ?? ?? 48 8B 0E 48 85 C9")) {
-		g_Skybox_UnkPtr_Offset =  *(uint32_t*)(addr + 3);
-	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-	return res;
+	return true;
 }
 
 void HookMirvCommands(HMODULE clientDll) {
 	if (g_bHookedMirvCommands) return;
 
-	if (!getAddressesFromClient(clientDll)) return;
+	if (!getAddressesFromClient()) return;
 
 	DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -534,8 +479,8 @@ void HookMirvCommands(HMODULE clientDll) {
 	DetourAttach(&(PVOID&)g_Original_OnFlashMaxAlphaChanged, new_OnFlashMaxAlphaChanged);
 	DetourAttach(&(PVOID&)g_Original_EOM, new_EOM);
 	DetourAttach(&(PVOID&)g_Original_setGlowProps, new_setGlowProps);
-	DetourAttach(&(PVOID&)org_shouldGlow, new_shouldGlow);
-	DetourAttach(&(PVOID&)org_ForceUpdateSkybox, new_ForceUpdateSkybox);
+	if (org_shouldGlow) DetourAttach(&(PVOID&)org_shouldGlow, new_shouldGlow);
+	if (org_ForceUpdateSkybox) DetourAttach(&(PVOID&)org_ForceUpdateSkybox, new_ForceUpdateSkybox);
 
 	if(NO_ERROR != DetourTransactionCommit()) {
 		ErrorBox("Failed to detour MirvCommands functions.");

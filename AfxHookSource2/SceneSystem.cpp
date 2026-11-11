@@ -7,6 +7,7 @@
 #include "EntMatPicker.h"
 #include "MirvColors.h"
 #include "StreamSettings.h"
+#include "addresses.h"
 
 #include "../shared/StringTools.h"
 #include "../deps/release/Detours/src/detours.h"
@@ -41,8 +42,6 @@ struct CBufferStringWrapper {
 
 typedef void* (__fastcall * ForceUpdateSkybox_t)(void* This);
 ForceUpdateSkybox_t org_ForceUpdateSkybox = nullptr;
-
-uint32_t g_Skybox_UnkPtr_Offset;
 
 struct CustomSkyState {
 	std::string currentSkyName = "";
@@ -202,6 +201,8 @@ void* new_ForceUpdateSkybox(void* This) {
 }
 
 void updateSkyboxEntities() {
+	if (nullptr == org_ForceUpdateSkybox || AFXADDR_INVALID == AFXADDR_GET(cs2_client_C_EnvSky_UnkPtr_offset)) return;
+
 	if (g_CustomSky.currentSkyName.size() != 0) {
 		if (cachedMaterials.find(g_CustomSky.currentSkyName) == cachedMaterials.end()) {
 			if (0 != g_pCResourceSystem->PreCache(g_CustomSky.currentSkyName.c_str())) {
@@ -219,7 +220,7 @@ void updateSkyboxEntities() {
 
 			// we have to remove pointer to object, so it can update
 			// see dissasembly for the update function
-			*(void**)((u_char*)ent + g_Skybox_UnkPtr_Offset) = nullptr;
+			*(void**)((u_char*)ent + AFXADDR_GET(cs2_client_C_EnvSky_UnkPtr_offset)) = nullptr;
 			new_ForceUpdateSkybox(ent);
 		}
 	}
