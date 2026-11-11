@@ -28,6 +28,13 @@ AFXADDR_DEF(cs2_scenesystem_C6FaceSkyboxObjectDesc_vtable)
 AFXADDR_DEF(cs2_scenesystem_CProjectedDecalSceneObjectDesc_vtable)
 AFXADDR_DEF(cs2_scenesystem_CreateRenderContextPtr1)
 AFXADDR_DEF(cs2_scenesystem_CreateRenderContextPtr2)
+AFXADDR_DEF_INVALID(cs2_scenesystem_CSceneLayer_m_nFlags_offset)
+AFXADDR_DEF_INVALID(cs2_scenesystem_CSceneLayer_m_pszViewPass_offset)
+AFXADDR_DEF_INVALID(cs2_scenesystem_CSceneObject_m_pDesc_offset)
+AFXADDR_DEF_INVALID(cs2_scenesystem_CSceneObject_m_hEntity_offset)
+AFXADDR_DEF_INVALID(cs2_scenesystem_CSceneObject_m_pMeshInstance_offset)
+AFXADDR_DEF_INVALID(cs2_scenesystem_CMeshInstance_m_ppModel_offset)
+AFXADDR_DEF_INVALID(cs2_scenesystem_CModel_m_pszName_offset)
 
 AFXADDR_DEF(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_vtable)
 AFXADDR_DEF_INVALID(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer_vtable_idx)
@@ -45,8 +52,13 @@ AFXADDR_DEF(cs2_materialsystem_CMaterialSystem2_FindMaterial)
 
 AFXADDR_DEF_INVALID(cs2_resourcesystem_CResourceSystem_GetMaterials_vtable_idx)
 AFXADDR_DEF_INVALID(cs2_resourcesystem_CResourceSystem_PreCache_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_resourcesystem_ResourceNameInfo_hash_offset)
+AFXADDR_DEF_INVALID(cs2_resourcesystem_ResourceNameInfo_extension_offset)
+AFXADDR_DEF_INVALID(cs2_resourcesystem_ResourceBinding_m_nRefCount_offset)
 
 AFXADDR_DEF(cs2_particles_CParticleObjectDesc_vtable)
+AFXADDR_DEF_INVALID(cs2_particles_CParticleObject_m_pDefinition_offset)
+AFXADDR_DEF_INVALID(cs2_particles_CParticleSystemDefinition_m_pszFilePath_offset)
 
 AFXADDR_DEF_INVALID(cs2_client_CCSGO_HudDeathNotice_lifetime_offset)
 AFXADDR_DEF_INVALID(cs2_client_CCSGO_HudDeathNotice_lifetimemod_offset)
@@ -115,6 +127,31 @@ AFXADDR_DEF_INVALID(cs2_client_CSource2Client_FrameStageNotify_vtable_idx)
 
 AFXADDR_DEF(cs2_client_CSmokeVolumeSceneObjectDesc_vtable)
 
+AFXADDR_DEF_INVALID(cs2_client_CEntityInstance_m_pEntity_offset)
+AFXADDR_DEF_INVALID(cs2_client_CEntityIdentity_m_pClassInfo_offset)
+AFXADDR_DEF_INVALID(cs2_client_CEntityIdentity_m_EHandle_offset)
+AFXADDR_DEF_INVALID(cs2_client_CEntityIdentity_m_name_offset)
+AFXADDR_DEF_INVALID(cs2_client_CEntityIdentity_m_designerName_offset)
+AFXADDR_DEF_INVALID(cs2_client_CEntityClass_ppszClassName_offset)
+AFXADDR_DEF_INVALID(cs2_client_ClientClass_m_pNetworkName_offset)
+AFXADDR_DEF_INVALID(cs2_client_CGlowProperty_pUnkObject_offset)
+AFXADDR_DEF_INVALID(cs2_client_SmokeConstantBuffer_size)
+AFXADDR_DEF_INVALID(cs2_client_SmokeConstantBuffer_count_offset)
+AFXADDR_DEF_INVALID(cs2_client_SmokeConstantBuffer_perSmokeValue_offset)
+AFXADDR_DEF_INVALID(cs2_client_CPanel2D_ClientClass_pszName_offset)
+AFXADDR_DEF_INVALID(cs2_client_CUIPanel_m_pClientPanel_offset)
+AFXADDR_DEF_INVALID(cs2_client_CUIPanel_m_pchID_offset)
+AFXADDR_DEF_INVALID(cs2_client_CUIPanel_m_vecChildren_offset)
+AFXADDR_DEF_INVALID(cs2_client_CUIPanel_m_PanelStyle_offset)
+AFXADDR_DEF_INVALID(cs2_client_CUIPanel_m_Flags_offset)
+AFXADDR_DEF_INVALID(cs2_client_CViewSetup_m_nWidth_offset)
+AFXADDR_DEF_INVALID(cs2_client_CViewSetup_m_nHeight_offset)
+AFXADDR_DEF_INVALID(cs2_client_CViewSetup_m_flFov_offset)
+AFXADDR_DEF_INVALID(cs2_client_CViewSetup_m_vecOrigin_offset)
+AFXADDR_DEF_INVALID(cs2_client_CViewSetup_m_angView_offset)
+AFXADDR_DEF_INVALID(cs2_client_CViewRender_ProjectionMatrix_offset)
+AFXADDR_DEF_INVALID(cs2_client_CViewRender_WorldToScreenMatrix_offset)
+
 AFXADDR_DEF(cs2_panorama_CLayoutFile_LoadFromFile)
 AFXADDR_DEF(cs2_panorama_CStylePropertyForegroundColor_Parse)
 AFXADDR_DEF(cs2_panorama_CStylePropertyBackgroundColor_Parse)
@@ -125,6 +162,10 @@ AFXADDR_DEF(cs2_panorama_CStylePropertyOpacity_vtable)
 AFXADDR_DEF(cs2_panorama_CStyleSymbol_Resolve)
 AFXADDR_DEF(cs2_panorama_g_StylePropertySymbols)
 AFXADDR_DEF(cs2_panorama_CPanelStyle_SetStyleProperty)
+AFXADDR_DEF_INVALID(cs2_panorama_CStylePropertyForegroundColor_m_Color_offset)
+AFXADDR_DEF_INVALID(cs2_panorama_CStylePropertyBackgroundColor_m_Color_offset)
+AFXADDR_DEF_INVALID(cs2_panorama_CStylePropertyBorder_m_rgColor_offset)
+AFXADDR_DEF_INVALID(cs2_panorama_CStylePropertyWashColor_m_Color_offset)
 
 namespace {
 
@@ -326,6 +367,25 @@ void Addresses_InitSceneSystemDll(AfxAddr sceneSystemDll) {
 	AFXADDR_SET(cs2_scenesystem_CSceneView_GetName_vtable_idx, 0);
 	AFXADDR_SET(cs2_scenesystem_CSceneObjectDesc_GetName_vtable_idx, 0);
 
+	// See DebugSceneData function notes in HookSceneSystem (SceneSystem.cpp).
+	AFXADDR_SET(cs2_scenesystem_CSceneLayer_m_nFlags_offset, 0x48);
+	AFXADDR_SET(cs2_scenesystem_CSceneLayer_m_pszViewPass_offset, 0x4b8);
+	AFXADDR_SET(cs2_scenesystem_CSceneObject_m_pDesc_offset, 0x18);
+
+	// Found by looking for known index values (e.g. of C4 model) in the lower 15 bit or the full handle would work too (32 bit):
+	// Also 8b 80 ?? ?? 00 00 8b c8 81 e1 ff 7f 00 00 83 f8 ff
+	// a little above "%ix%i %s:%i (%d)" with " [RE-RENDER: different object flags requested]"
+	// see following
+	// if (*(uint *)(*plVar27 + 0xc0) != 0xffffffff) {
+	//     uVar13 = *(uint *)(*plVar27 + 0xc0) & 0x7fff;
+	// }
+	AFXADDR_SET(cs2_scenesystem_CSceneObject_m_hEntity_offset, 0xC0);
+
+	// Model name of a base / animatable scene object: poi(poi(poi(pSceneObject+0x10)+0x8)+0x8)
+	AFXADDR_SET(cs2_scenesystem_CSceneObject_m_pMeshInstance_offset, 0x10);
+	AFXADDR_SET(cs2_scenesystem_CMeshInstance_m_ppModel_offset, 0x8);
+	AFXADDR_SET(cs2_scenesystem_CModel_m_pszName_offset, 0x8);
+
 	// Scene object descriptors:
 	// vtable[0] - GetDesc()
 	// vtable[1] - DrawArray()
@@ -471,6 +531,14 @@ void Addresses_InitResourceSystemDll(AfxAddr resourceSystemDll) {
 	// "Resource \"%s\" was explicitly loaded with a blocking load.\n"
 	// There are 2 precache functions in vtable next to each other, this is first one
 	AFXADDR_SET(cs2_resourcesystem_CResourceSystem_PreCache_vtable_idx, 40);
+
+	// Resource name info passed to PreCache (0xE0 bytes, starts with a CBufferString),
+	// see where func is called with "FixupResourceName: Illegal full path passed in (\"%s\")!\n" in client.dll.
+	AFXADDR_SET(cs2_resourcesystem_ResourceNameInfo_hash_offset, 0xD0);
+	AFXADDR_SET(cs2_resourcesystem_ResourceNameInfo_extension_offset, 0xD8);
+
+	// Reference count of a resource binding (e.g. CMaterial2 ** returned by cs2_materialsystem_CMaterialSystem2_FindMaterial).
+	AFXADDR_SET(cs2_resourcesystem_ResourceBinding_m_nRefCount_offset, 0x20);
 }
 
 void Addresses_InitParticlesDll(AfxAddr particlesDll) {
@@ -479,6 +547,12 @@ void Addresses_InitParticlesDll(AfxAddr particlesDll) {
 	if (AfxAddr addr = FindClassVtable((HMODULE)particlesDll, ".?AVCParticleObjectDesc@@", 0, 0))
 		AFXADDR_SET(cs2_particles_CParticleObjectDesc_vtable, addr);
 	else ADDR_MISSING(cs2_particles_CParticleObjectDesc_vtable);
+
+	// pSceneObject + 0x10 -> object of ".?AVCParticleSystemDefinition@@"
+	// poi(poi(poi(poi(poi(pSceneObject+0x10)+0x90)))-8)+c --> ".?AVC_OP_RopeSpringConstraint@@"
+	// poi(poi(pSceneObject+0x10)+0x250) --> // particles/entity/path_particle_cable_static.vpcf
+	AFXADDR_SET(cs2_particles_CParticleObject_m_pDefinition_offset, 0x10);
+	AFXADDR_SET(cs2_particles_CParticleSystemDefinition_m_pszFilePath_offset, 0x250);
 
 	missing.Report();
 }
@@ -940,6 +1014,59 @@ LAB_1809a7de1
 		AFXADDR_SET(cs2_client_CSmokeVolumeSceneObjectDesc_vtable, addr);
 	else ADDR_MISSING(cs2_client_CSmokeVolumeSceneObjectDesc_vtable);
 
+	//
+	// Member offsets
+
+	// CEntityIdentity (CEntityInstance::m_pEntity), retrieved from the VSCRIPT entity functions
+	// (see "CEntityInstance: Root class for all entities" and CEntityInstance::GetName etc. in ClientEntitySystem.cpp).
+	// m_pEntity is also in the schema (g_clientDllOffsets.CEntityInstance.m_pEntity), but that is only available later.
+	AFXADDR_SET(cs2_client_CEntityInstance_m_pEntity_offset, 0x10);
+	AFXADDR_SET(cs2_client_CEntityIdentity_m_pClassInfo_offset, 0x8);
+	AFXADDR_SET(cs2_client_CEntityIdentity_m_EHandle_offset, 0x10);
+	AFXADDR_SET(cs2_client_CEntityIdentity_m_name_offset, 0x18);
+	AFXADDR_SET(cs2_client_CEntityIdentity_m_designerName_offset, 0x20);
+	AFXADDR_SET(cs2_client_CEntityClass_ppszClassName_offset, 0x58);
+
+	// Of the class returned by cs2_client_CEntityInstance_GetClientClass_vtable_idx.
+	AFXADDR_SET(cs2_client_ClientClass_m_pNetworkName_offset, 0x10);
+
+	// see where cs2_client_CGlowProperty_ShouldGlow is called, in the block where result of this fn is true
+	// if (*(longlong **)(param_1 + 0x18) != (longlong *)0x0) {
+	//   lVar7 = (**(code **)(**(longlong **)(param_1 + 0x18) + 0x1a8))();
+	// }
+	AFXADDR_SET(cs2_client_CGlowProperty_pUnkObject_offset, 0x18);
+
+	// Smoke constant buffer, see cs2_client_RenderSmokes:
+	//     buf = (**(code **)(*param_2 + 0x100))(param_2, 0x9c0, &data);   // Lock, returns a handle
+	//     *(uint *)(uVar19 + 0x9b0) = uVar20; // before calling 0x108 fn
+	//     in the middle of loop (stride 0x10 per smoke):
+	//     *(float *)(uVar22 + 0x504 + uVar19) = (3.0 - (fVar35 + fVar35)) * fVar35 * fVar35;
+	//     *(float *)(uVar22 + 0x508 + uVar19) = (3.0 - (fVar26 + fVar26)) * fVar26 * fVar26;
+	//     *(float *)(uVar22 + 0x50c + uVar19) = (3.0 - (fVar36 + fVar36)) * fVar36 * fVar36;
+	AFXADDR_SET(cs2_client_SmokeConstantBuffer_size, 0x9c0);
+	AFXADDR_SET(cs2_client_SmokeConstantBuffer_count_offset, 0x9b0);
+	AFXADDR_SET(cs2_client_SmokeConstantBuffer_perSmokeValue_offset, 0x508);
+
+	// Panorama (credit https://github.com/danielkrupinski/Osiris)
+	// Of the class returned by cs2_client_CPanel2D_GetClientClass_vtable_idx.
+	AFXADDR_SET(cs2_client_CPanel2D_ClientClass_pszName_offset, 0x8);
+	AFXADDR_SET(cs2_client_CUIPanel_m_pClientPanel_offset, 0x8); // CPanel2D *
+	AFXADDR_SET(cs2_client_CUIPanel_m_pchID_offset, 0x10);
+	AFXADDR_SET(cs2_client_CUIPanel_m_vecChildren_offset, 0x28);
+	AFXADDR_SET(cs2_client_CUIPanel_m_PanelStyle_offset, 0x68);
+	AFXADDR_SET(cs2_client_CUIPanel_m_Flags_offset, 0x11c);
+
+	// CViewSetup, see cs2_client_CViewRender_SetUpView_IsPlayingDemo.
+	AFXADDR_SET(cs2_client_CViewSetup_m_nWidth_offset, 0x434);
+	AFXADDR_SET(cs2_client_CViewSetup_m_nHeight_offset, 0x43C);
+	AFXADDR_SET(cs2_client_CViewSetup_m_flFov_offset, 0x498);
+	AFXADDR_SET(cs2_client_CViewSetup_m_vecOrigin_offset, 0x4a0);
+	AFXADDR_SET(cs2_client_CViewSetup_m_angView_offset, 0x4b8);
+
+	// CViewRender, see cs2_client_CViewRender_UnkMakeMatrix.
+	AFXADDR_SET(cs2_client_CViewRender_ProjectionMatrix_offset, 0x218);
+	AFXADDR_SET(cs2_client_CViewRender_WorldToScreenMatrix_offset, 0x298);
+
 	missing.Report();
 }
 
@@ -1015,6 +1142,12 @@ void Addresses_InitPanoramaDll(AfxAddr panoramaDll) {
 	if (AfxAddr addr = FindPattern(textRange, "E8 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 45 ?? EB"))
 		AFXADDR_SET(cs2_panorama_CPanelStyle_SetStyleProperty, ResolveRel32(addr, 1, 5));
 	else ADDR_MISSING(cs2_panorama_CPanelStyle_SetStyleProperty);
+
+	// Colors set by the Parse / Clone functions above.
+	AFXADDR_SET(cs2_panorama_CStylePropertyForegroundColor_m_Color_offset, 0x20);
+	AFXADDR_SET(cs2_panorama_CStylePropertyBackgroundColor_m_Color_offset, 0x20);
+	AFXADDR_SET(cs2_panorama_CStylePropertyBorder_m_rgColor_offset, 0x38); // 4 colors
+	AFXADDR_SET(cs2_panorama_CStylePropertyWashColor_m_Color_offset, 0x10);
 
 	missing.Report();
 }

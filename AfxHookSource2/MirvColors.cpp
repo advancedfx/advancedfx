@@ -225,39 +225,31 @@ void __fastcall new_setSmokeProps(CEntityInstance* param_1) {
 	g_Original_setSmokeProps(param_1);
 }
 
-// both 0x100 and 0x108 are called with this value in g_Original_renderSmokes
-const uint32_t g_SmokeCbSize = 0x9c0;
-
 thread_local bool g_bInSmokeRender = false;
 thread_local void* g_SmokeCbHandle = nullptr;
 thread_local void* g_SmokeCbData = nullptr;
 
+// See cs2_client_SmokeConstantBuffer_* in addresses.cpp.
+
 void MirvColors_OnLockDynamicConstantBuffer(void *handle, void **data, uint32_t size) {
-	if (!g_bInSmokeRender || size != g_SmokeCbSize || handle == nullptr || data == nullptr) return;
+	if (!g_bInSmokeRender || size != AFXADDR_GET(cs2_client_SmokeConstantBuffer_size) || handle == nullptr || data == nullptr) return;
 	g_SmokeCbHandle = handle;
 	g_SmokeCbData = *data;
 }
 
 void MirvColors_OnUnlockDynamicConstantBuffer(void *handle, uint32_t size) {
-	if (!g_bInSmokeRender || size != g_SmokeCbSize || handle == nullptr || handle != g_SmokeCbHandle) return;
+	if (!g_bInSmokeRender || size != AFXADDR_GET(cs2_client_SmokeConstantBuffer_size) || handle == nullptr || handle != g_SmokeCbHandle) return;
 
 	u_char* cb = (u_char*)g_SmokeCbData;
 	g_SmokeCbHandle = nullptr;
 	g_SmokeCbData = nullptr;
 
-	// See g_Original_renderSmokes
-	// *(uint *)(uVar19 + 0x9b0) = uVar20;
-	// before calling 0x108 fn
-	int count = *(int*)(cb + 0x9b0);
+	int count = *(int*)(cb + AFXADDR_GET(cs2_client_SmokeConstantBuffer_count_offset));
 	// See near "Unable to render more than %d smokes.\n"
 	if (count < 0 || count > 0x10) count = 0;
 
 	for (int i = 0; i < count; i++) {
-		*(float*)(cb + 0x508 + i * 0x10) = 0.0f;
-		// in the middle of loop
-		// *(float *)(uVar22 + 0x504 + uVar19) = (3.0 - (fVar35 + fVar35)) * fVar35 * fVar35;
-		// *(float *)(uVar22 + 0x508 + uVar19) = (3.0 - (fVar26 + fVar26)) * fVar26 * fVar26;
-		// *(float *)(uVar22 + 0x50c + uVar19) = (3.0 - (fVar36 + fVar36)) * fVar36 * fVar36;
+		*(float*)(cb + AFXADDR_GET(cs2_client_SmokeConstantBuffer_perSmokeValue_offset) + i * 0x10) = 0.0f;
 	}
 }
 

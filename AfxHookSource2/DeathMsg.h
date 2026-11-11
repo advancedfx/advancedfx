@@ -16,11 +16,7 @@ extern currentGameCamera g_CurrentGameCamera;
 namespace CS2 {
 // https://github.com/danielkrupinski/Osiris
 	namespace PanoramaUIPanel {
-		// TODO: get these from pattern matching
-		constexpr ptrdiff_t panelId = 0x10;
-		constexpr ptrdiff_t children = 0x28;
-		constexpr ptrdiff_t panelStyle = 0x68;
-		constexpr ptrdiff_t panelFlags = 0x11c;
+		// See addresses.h for the member offsets.
 
 		constexpr ptrdiff_t k_EPanelFlag_HasOwnLayoutFile = 0x40;
 	}

@@ -45,10 +45,10 @@ const char * CEntityInstance::GetName() {
             *puVar4 = "GetName";
             ...
             puVar4[8] = FUN_18094f290; // <-  VSCRIPT entity.GetName function.
-            ...            
-        }        
+            ...
+        }
     */
-	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + AFXADDR_GET(cs2_client_CEntityInstance_m_pEntity_offset)) + AFXADDR_GET(cs2_client_CEntityIdentity_m_name_offset));
 	if(pszName) return pszName;
 	return "";
 }
@@ -68,9 +68,10 @@ const char * CEntityInstance::GetDebugName() {
             ...            
         }        
     */    
-	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
+	unsigned char * pEntityIdentity = *(unsigned char**)((unsigned char*)this + AFXADDR_GET(cs2_client_CEntityInstance_m_pEntity_offset));
+	const char * pszName = (const char*)*(unsigned char**)(pEntityIdentity + AFXADDR_GET(cs2_client_CEntityIdentity_m_name_offset));
 	if(pszName) return pszName;
-	return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x58);
+	return **(const char***)(*(unsigned char**)(pEntityIdentity + AFXADDR_GET(cs2_client_CEntityIdentity_m_pClassInfo_offset)) + AFXADDR_GET(cs2_client_CEntityClass_ppszClassName_offset));
 }
 
 // Retrieved from script function.
@@ -85,7 +86,7 @@ const char * CEntityInstance::GetClassName() {
             ...            
         }        
     */     
-	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x20);
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + AFXADDR_GET(cs2_client_CEntityInstance_m_pEntity_offset)) + AFXADDR_GET(cs2_client_CEntityIdentity_m_designerName_offset));
 	if(pszName) return pszName;
 	return "";
 }
@@ -97,7 +98,7 @@ const char * CEntityInstance::GetClientClassName() {
     void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[AFXADDR_GET(cs2_client_CEntityInstance_GetClientClass_vtable_idx)]) (this);
 
     if(pClientClass) {
-        return *(const char**)((unsigned char*)pClientClass + 0x10);
+        return *(const char**)((unsigned char*)pClientClass + AFXADDR_GET(cs2_client_ClientClass_m_pNetworkName_offset));
     }
     return nullptr;
 }
@@ -201,7 +202,7 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetObserverTarget() {
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetHandle() {
 	if (auto pEntityIdentity = *(u_char**)((u_char*)this + g_clientDllOffsets.CEntityInstance.m_pEntity)) {
-		return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(uint32_t*)(pEntityIdentity + 0x10));
+		return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(uint32_t*)(pEntityIdentity + AFXADDR_GET(cs2_client_CEntityIdentity_m_EHandle_offset)));
 	}
 
 	return SOURCESDK::CS2::CEntityHandle::CEntityHandle();

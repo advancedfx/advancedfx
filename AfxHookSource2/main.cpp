@@ -644,12 +644,12 @@ bool CS2_Client_CSetupView_Trampoline_IsPlayingDemo(void *ThisCViewSetup) {
 	float curTime = g_MirvTime.curtime_get(); //TODO: + m_PausedTime
 	float absTime = g_MirvTime.absoluteframetime_get();
 
-	int *pWidth = (int*)((unsigned char *)ThisCViewSetup + 0x434);
-	int *pHeight = (int*)((unsigned char *)ThisCViewSetup + 0x43C);
+	int *pWidth = (int*)((unsigned char *)ThisCViewSetup + AFXADDR_GET(cs2_client_CViewSetup_m_nWidth_offset));
+	int *pHeight = (int*)((unsigned char *)ThisCViewSetup + AFXADDR_GET(cs2_client_CViewSetup_m_nHeight_offset));
 
-	float *pFov = (float*)((unsigned char *)ThisCViewSetup + 0x498);
-	float *pViewOrigin = (float*)((unsigned char *)ThisCViewSetup + 0x4a0);
-	float *pViewAngles = (float*)((unsigned char *)ThisCViewSetup + 0x4b8);
+	float *pFov = (float*)((unsigned char *)ThisCViewSetup + AFXADDR_GET(cs2_client_CViewSetup_m_flFov_offset));
+	float *pViewOrigin = (float*)((unsigned char *)ThisCViewSetup + AFXADDR_GET(cs2_client_CViewSetup_m_vecOrigin_offset));
+	float *pViewAngles = (float*)((unsigned char *)ThisCViewSetup + AFXADDR_GET(cs2_client_CViewSetup_m_angView_offset));
 
 	int width = *pWidth;
 	int height = *pHeight;
@@ -942,7 +942,7 @@ void __fastcall New_CViewRender_UnkMakeMatrix(void* This) {
 	g_WorldToScreenMatrix.m[3][2] = result(3,2);
 	g_WorldToScreenMatrix.m[3][3] = result(3,3);*/
 
-	float* proj = (float*)((unsigned char*)This + 0x218);
+	float* proj = (float*)((unsigned char*)This + AFXADDR_GET(cs2_client_CViewRender_ProjectionMatrix_offset));
 	SOURCESDK::VMatrix projectionMatrix;
 	projectionMatrix.m[0][0] = proj[4 * 0 + 0];
 	projectionMatrix.m[0][1] = proj[4 * 0 + 1];
@@ -962,7 +962,7 @@ void __fastcall New_CViewRender_UnkMakeMatrix(void* This) {
 	projectionMatrix.m[3][3] = proj[4 * 3 + 3];
 	RenderSystemDX11_SupplyProjectionMatrix(projectionMatrix);
 
-	proj = (float *)((unsigned char*)This + 0x298);
+	proj = (float *)((unsigned char*)This + AFXADDR_GET(cs2_client_CViewRender_WorldToScreenMatrix_offset));
 	g_WorldToScreenMatrix.m[0][0] = proj[4*0+0];
 	g_WorldToScreenMatrix.m[0][1] = proj[4*0+1];
 	g_WorldToScreenMatrix.m[0][2] = proj[4*0+2];

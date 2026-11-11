@@ -290,11 +290,7 @@ org_shouldGlow_t org_shouldGlow = nullptr;
 
 bool new_shouldGlow(u_char* glowProperty) {
 	auto result = org_shouldGlow(glowProperty);
-	// see where this function is called, in the block where result of this fn is true
-	// if (*(longlong **)(param_1 + 0x18) != (longlong *)0x0) {
-    //   lVar7 = (**(code **)(**(longlong **)(param_1 + 0x18) + 0x1a8))();
-    // }
-	if (0 == *(u_char**)(glowProperty + 0x18)) return result;
+	if (0 == *(u_char**)(glowProperty + AFXADDR_GET(cs2_client_CGlowProperty_pUnkObject_offset))) return result;
 
 	auto ent = (CEntityInstance*)(glowProperty - g_clientDllOffsets.C_BaseModelEntity.m_Glow);
 	auto handle = ent->GetHandle();

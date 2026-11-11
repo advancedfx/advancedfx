@@ -2,10 +2,10 @@
 
 #include "../shared/vcpp/AfxAddr.h"
 
-// Naming: cs2_<dll>_<Class>_<Member>[_vtable_idx|_offset]
+// Naming: cs2_<dll>_<Class>_<Member>[_vtable_idx|_offset|_size]
 //
 // Function and global addresses are 0 when not set.
-// Offsets (_offset) and vtable indices (_vtable_idx) are AFXADDR_INVALID when not set.
+// Offsets (_offset), sizes (_size) and vtable indices (_vtable_idx) are AFXADDR_INVALID when not set.
 //
 // Addresses that can not be found are reported by the Addresses_Init*Dll functions,
 // code using them only needs to check if they are set.
@@ -28,6 +28,13 @@ AFXADDR_DECL(cs2_scenesystem_C6FaceSkyboxObjectDesc_vtable)
 AFXADDR_DECL(cs2_scenesystem_CProjectedDecalSceneObjectDesc_vtable)
 AFXADDR_DECL(cs2_scenesystem_CreateRenderContextPtr1)
 AFXADDR_DECL(cs2_scenesystem_CreateRenderContextPtr2)
+AFXADDR_DECL(cs2_scenesystem_CSceneLayer_m_nFlags_offset)
+AFXADDR_DECL(cs2_scenesystem_CSceneLayer_m_pszViewPass_offset)
+AFXADDR_DECL(cs2_scenesystem_CSceneObject_m_pDesc_offset)
+AFXADDR_DECL(cs2_scenesystem_CSceneObject_m_hEntity_offset)
+AFXADDR_DECL(cs2_scenesystem_CSceneObject_m_pMeshInstance_offset)
+AFXADDR_DECL(cs2_scenesystem_CMeshInstance_m_ppModel_offset)
+AFXADDR_DECL(cs2_scenesystem_CModel_m_pszName_offset)
 
 AFXADDR_DECL(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_vtable)
 AFXADDR_DECL(cs2_rendersystem_CRenderContextDx11_SoftwareCommandLists_LockDynamicConstantBuffer_vtable_idx)
@@ -45,8 +52,13 @@ AFXADDR_DECL(cs2_materialsystem_CMaterialSystem2_FindMaterial)
 
 AFXADDR_DECL(cs2_resourcesystem_CResourceSystem_GetMaterials_vtable_idx)
 AFXADDR_DECL(cs2_resourcesystem_CResourceSystem_PreCache_vtable_idx)
+AFXADDR_DECL(cs2_resourcesystem_ResourceNameInfo_hash_offset)
+AFXADDR_DECL(cs2_resourcesystem_ResourceNameInfo_extension_offset)
+AFXADDR_DECL(cs2_resourcesystem_ResourceBinding_m_nRefCount_offset)
 
 AFXADDR_DECL(cs2_particles_CParticleObjectDesc_vtable)
+AFXADDR_DECL(cs2_particles_CParticleObject_m_pDefinition_offset)
+AFXADDR_DECL(cs2_particles_CParticleSystemDefinition_m_pszFilePath_offset)
 
 AFXADDR_DECL(cs2_client_CCSGO_HudDeathNotice_lifetime_offset)
 AFXADDR_DECL(cs2_client_CCSGO_HudDeathNotice_lifetimemod_offset)
@@ -115,6 +127,31 @@ AFXADDR_DECL(cs2_client_CSource2Client_FrameStageNotify_vtable_idx)
 
 AFXADDR_DECL(cs2_client_CSmokeVolumeSceneObjectDesc_vtable)
 
+AFXADDR_DECL(cs2_client_CEntityInstance_m_pEntity_offset)
+AFXADDR_DECL(cs2_client_CEntityIdentity_m_pClassInfo_offset)
+AFXADDR_DECL(cs2_client_CEntityIdentity_m_EHandle_offset)
+AFXADDR_DECL(cs2_client_CEntityIdentity_m_name_offset)
+AFXADDR_DECL(cs2_client_CEntityIdentity_m_designerName_offset)
+AFXADDR_DECL(cs2_client_CEntityClass_ppszClassName_offset)
+AFXADDR_DECL(cs2_client_ClientClass_m_pNetworkName_offset)
+AFXADDR_DECL(cs2_client_CGlowProperty_pUnkObject_offset)
+AFXADDR_DECL(cs2_client_SmokeConstantBuffer_size)
+AFXADDR_DECL(cs2_client_SmokeConstantBuffer_count_offset)
+AFXADDR_DECL(cs2_client_SmokeConstantBuffer_perSmokeValue_offset)
+AFXADDR_DECL(cs2_client_CPanel2D_ClientClass_pszName_offset)
+AFXADDR_DECL(cs2_client_CUIPanel_m_pClientPanel_offset)
+AFXADDR_DECL(cs2_client_CUIPanel_m_pchID_offset)
+AFXADDR_DECL(cs2_client_CUIPanel_m_vecChildren_offset)
+AFXADDR_DECL(cs2_client_CUIPanel_m_PanelStyle_offset)
+AFXADDR_DECL(cs2_client_CUIPanel_m_Flags_offset)
+AFXADDR_DECL(cs2_client_CViewSetup_m_nWidth_offset)
+AFXADDR_DECL(cs2_client_CViewSetup_m_nHeight_offset)
+AFXADDR_DECL(cs2_client_CViewSetup_m_flFov_offset)
+AFXADDR_DECL(cs2_client_CViewSetup_m_vecOrigin_offset)
+AFXADDR_DECL(cs2_client_CViewSetup_m_angView_offset)
+AFXADDR_DECL(cs2_client_CViewRender_ProjectionMatrix_offset)
+AFXADDR_DECL(cs2_client_CViewRender_WorldToScreenMatrix_offset)
+
 AFXADDR_DECL(cs2_panorama_CLayoutFile_LoadFromFile)
 AFXADDR_DECL(cs2_panorama_CStylePropertyForegroundColor_Parse)
 AFXADDR_DECL(cs2_panorama_CStylePropertyBackgroundColor_Parse)
@@ -125,6 +162,10 @@ AFXADDR_DECL(cs2_panorama_CStylePropertyOpacity_vtable)
 AFXADDR_DECL(cs2_panorama_CStyleSymbol_Resolve)
 AFXADDR_DECL(cs2_panorama_g_StylePropertySymbols)
 AFXADDR_DECL(cs2_panorama_CPanelStyle_SetStyleProperty)
+AFXADDR_DECL(cs2_panorama_CStylePropertyForegroundColor_m_Color_offset)
+AFXADDR_DECL(cs2_panorama_CStylePropertyBackgroundColor_m_Color_offset)
+AFXADDR_DECL(cs2_panorama_CStylePropertyBorder_m_rgColor_offset)
+AFXADDR_DECL(cs2_panorama_CStylePropertyWashColor_m_Color_offset)
 
 void Addresses_InitEngine2Dll(AfxAddr engine2Dll);
 

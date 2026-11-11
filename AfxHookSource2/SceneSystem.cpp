@@ -139,8 +139,8 @@ CMaterial2** CResourceSystem::PreCache (const char* name) {
 	auto hash = MurmurHash64B(wrapper.buf.Get(), wrapper.buf.Length(), 0xEDABCDEF);
 
 	auto pWrapper = (u_char*)&wrapper;
-	memcpy(pWrapper + 0xD0, &hash, 8);
-	memcpy(pWrapper + 0xD8, extension.Get(), 8);
+	memcpy(pWrapper + AFXADDR_GET(cs2_resourcesystem_ResourceNameInfo_hash_offset), &hash, 8);
+	memcpy(pWrapper + AFXADDR_GET(cs2_resourcesystem_ResourceNameInfo_extension_offset), extension.Get(), 8);
 
 	return org_PreCache(this, &wrapper, "");
 }
@@ -169,9 +169,9 @@ void* new_ForceUpdateSkybox(void* This) {
 		org_FindMaterial(nullptr, &newMat, g_CustomSky.currentSkyName.c_str());
 
 		if (0 != newMat) {
-			auto counter = *(uint32_t*)((u_char*)newMat + 0x20);
+			auto counter = *(uint32_t*)((u_char*)newMat + AFXADDR_GET(cs2_resourcesystem_ResourceBinding_m_nRefCount_offset));
 			counter = counter + 1;
-			*(uint32_t*)((u_char*)newMat + 0x20) = counter;
+			*(uint32_t*)((u_char*)newMat + AFXADDR_GET(cs2_resourcesystem_ResourceBinding_m_nRefCount_offset)) = counter;
 			*(CMaterial2***)((u_char*)This + g_clientDllOffsets.C_EnvSky.m_hSkyMaterial) = newMat;
 		}
 	} else if (previousSkybox.size() != 0) {
@@ -233,8 +233,6 @@ void updateSkyboxEntities() {
 
 }
 
-size_t g_SceneLayer_pszViewPass_Offset = -1;
-size_t g_SceneLayer_Flags_Offset = -1;
 
 struct CBaseSceneData {
 	char _pad0[0x18];
@@ -245,8 +243,6 @@ struct CBaseSceneData {
 	char _pad2[0x14];
 };
 
-size_t g_SceneObject_pSceneObjectDesc_Offset = -1;
-size_t g_SceneObject_pCBaseHandle_Offset = -1;
 
 static_assert(sizeof(CBaseSceneData) == 0x68, "Unexpected CBaseSceneData size.");
 
@@ -678,10 +674,10 @@ static bool SceneDataMaterialIsWeapon(SceneObjectFilterClass filterClass, const 
 		if (nullptr == pSceneData) return false;
 		auto sceneObject = pSceneData->sceneObject;
 		if (nullptr == sceneObject) return false;
-		auto meshInstance = *(u_char**)((u_char*)sceneObject + 0x10);
+		auto meshInstance = *(u_char**)((u_char*)sceneObject + AFXADDR_GET(cs2_scenesystem_CSceneObject_m_pMeshInstance_offset));
 		if (nullptr == meshInstance) return false;
-		auto model = **(u_char***)(meshInstance + 0x8);
-		auto modelName = *(const char**)(model + 0x8);
+		auto model = **(u_char***)(meshInstance + AFXADDR_GET(cs2_scenesystem_CMeshInstance_m_ppModel_offset));
+		auto modelName = *(const char**)(model + AFXADDR_GET(cs2_scenesystem_CModel_m_pszName_offset));
 
 		if (StringContains(modelName, "weapons/models")) {// double check because we might get gloves in case they have skin
 			return !SceneLayerContextIsPlayers(context);
@@ -707,14 +703,11 @@ static bool SceneDataMaterialIsShell(SceneObjectFilterClass filterClass, const c
 static bool SceneDataIsCables(SceneObjectFilterClass filterClass, const CBaseSceneData * pSceneData, const SceneLayerContext& context) {
 	if(filterClass != SceneObjectFilterClass::Particles) return false;
 	if(SceneLayerContextIsCables(context)) return true;
-	// pSceneObject + 0x10 -> object of ".?AVCParticleSystemDefinition@@"
-	// poi(poi(poi(poi(poi(pSceneObject+0x10)+0x90)))-8)+c --> ".?AVC_OP_RopeSpringConstraint@@"
-	// poi(poi(pSceneObject+0x10)+0x250) --> // particles/entity/path_particle_cable_static.vpcf
 	if (nullptr == pSceneData) return false;
 	auto sceneObject = pSceneData->sceneObject;
-	auto particleSystemDefinition = *(u_char**)((u_char*)sceneObject + 0x10);
-	if (nullptr == particleSystemDefinition) return false;	
-	const char * particleDefinitionFilePath = (const char *)*(u_char**)((u_char*)particleSystemDefinition + 0x250);
+	auto particleSystemDefinition = *(u_char**)((u_char*)sceneObject + AFXADDR_GET(cs2_particles_CParticleObject_m_pDefinition_offset));
+	if (nullptr == particleSystemDefinition) return false;
+	const char * particleDefinitionFilePath = (const char *)*(u_char**)((u_char*)particleSystemDefinition + AFXADDR_GET(cs2_particles_CParticleSystemDefinition_m_pszFilePath_offset));
 	return nullptr != particleDefinitionFilePath && StringContains(particleDefinitionFilePath, "particle_cable"); // There are multiple!
 }
 
@@ -775,7 +768,7 @@ static bool TryGetSceneSemanticPolicy(SceneObjectFilterClass filterClass, const 
 static const char* GetSceneObjectDescName(const CBaseSceneData& sceneData) {
 	if (sceneData.sceneObject == nullptr) return nullptr;
 
-	void* desc = *(void**)((unsigned char*)sceneData.sceneObject + g_SceneObject_pSceneObjectDesc_Offset);
+	void* desc = *(void**)((unsigned char*)sceneData.sceneObject + AFXADDR_GET(cs2_scenesystem_CSceneObject_m_pDesc_offset));
 	if (desc == nullptr) return nullptr;
 
 	void** vtable = *(void***)desc;
@@ -870,7 +863,7 @@ static SceneObjectDrawPolicy GetSceneDataPolicy(SceneObjectFilterClass filterCla
 
 static SOURCESDK::CS2::CBaseHandle GetSceneDataEntityHandle(const CBaseSceneData* pSceneData) {
 	if (nullptr == pSceneData || nullptr == pSceneData->sceneObject) return SOURCESDK::CS2::CBaseHandle();
-	return SOURCESDK::CS2::CBaseHandle(*(uint32_t*)((unsigned char*)pSceneData->sceneObject + g_SceneObject_pCBaseHandle_Offset));
+	return SOURCESDK::CS2::CBaseHandle(*(uint32_t*)((unsigned char*)pSceneData->sceneObject + AFXADDR_GET(cs2_scenesystem_CSceneObject_m_hEntity_offset)));
 }
 
 // Picker (mirv_streams picker ...), takes precedence over everything else.
@@ -925,7 +918,7 @@ static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBa
 
 		if (pSceneData->sceneObject) {
 			SceneObjectFilterClass filterClass = SceneObjectFilterClass::Unknown;
-			if(void* desc = *(void**)((unsigned char*)pSceneData->sceneObject + g_SceneObject_pSceneObjectDesc_Offset)) {
+			if(void* desc = *(void**)((unsigned char*)pSceneData->sceneObject + AFXADDR_GET(cs2_scenesystem_CSceneObject_m_pDesc_offset))) {
 				void** vtable = *(void***)desc;
 				auto it = g_VtableToSceneObjectFilterClass.find(vtable);
 				if(it != g_VtableToSceneObjectFilterClass.end())
@@ -933,9 +926,9 @@ static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBa
 			}
 
 			if (filterClass == SceneObjectFilterClass::Base || filterClass == SceneObjectFilterClass::Animatable) {
-				if (auto meshInstance = *(u_char**)((u_char*)(pSceneData->sceneObject) + 0x10)) {
-					auto model = **(u_char***)(meshInstance + 0x8);
-					modelName = *(const char**)(model + 0x8);
+				if (auto meshInstance = *(u_char**)((u_char*)(pSceneData->sceneObject) + AFXADDR_GET(cs2_scenesystem_CSceneObject_m_pMeshInstance_offset))) {
+					auto model = **(u_char***)(meshInstance + AFXADDR_GET(cs2_scenesystem_CMeshInstance_m_ppModel_offset));
+					modelName = *(const char**)(model + AFXADDR_GET(cs2_scenesystem_CModel_m_pszName_offset));
 					query.ModelName = &modelName;
 				}
 			}
@@ -1012,8 +1005,8 @@ void __fastcall new_RenderLayerDrawListPart(void * pSceneSystem, void * param_2,
 			void** vtable = *(void***)pCSceneView;
 			context.ViewName = ((const char* (__fastcall*)(void*))vtable[0])(pCSceneView);
 		}
-		context.ViewPass = (const char*)pCSceneLayer + g_SceneLayer_pszViewPass_Offset;
-		context.Flags = *(uint32_t*)((unsigned char*)pCSceneLayer + g_SceneLayer_Flags_Offset);
+		context.ViewPass = (const char*)pCSceneLayer + AFXADDR_GET(cs2_scenesystem_CSceneLayer_m_pszViewPass_offset);
+		context.Flags = *(uint32_t*)((unsigned char*)pCSceneLayer + AFXADDR_GET(cs2_scenesystem_CSceneLayer_m_nFlags_offset));
 		
 		{
 			std::unique_lock<std::shared_timed_mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
@@ -1093,9 +1086,9 @@ void SetContextFromDrawingData(SceneLayerContext & context, void * pDrawingData)
 	void** pSceneViewVtable = *(void***)pSceneView;
 	context.ViewName = ((const char* (__fastcall*)(void*))pSceneViewVtable[AFXADDR_GET(cs2_scenesystem_CSceneView_GetName_vtable_idx)])(pSceneView);
 
-	context.ViewPass = (const char*)pSceneLayer + g_SceneLayer_pszViewPass_Offset;
+	context.ViewPass = (const char*)pSceneLayer + AFXADDR_GET(cs2_scenesystem_CSceneLayer_m_pszViewPass_offset);
 
-	context.Flags = *(uint32_t*)((unsigned char*)pSceneLayer + g_SceneLayer_Flags_Offset);	
+	context.Flags = *(uint32_t*)((unsigned char*)pSceneLayer + AFXADDR_GET(cs2_scenesystem_CSceneLayer_m_nFlags_offset));	
 }
 
 typedef void (__fastcall * DrawCurrentPrimitives_t)(void * pDrawingData);
@@ -1142,7 +1135,7 @@ void __fastcall new_InitDrawingData(unsigned char * pDrawingData,void *pSceneVie
 		/*void** pSceneViewVtable = *(void***)pSceneView;
 		SceneLayerContext context;
 		context.ViewName = ((const char* (__fastcall*)(void*))pSceneViewVtable[0])(pSceneView); // see DebugSceneData function for how to know it's fist function in vtable.
-		context.ViewPass = (const char*)pSceneLayer + g_SceneLayer_pszViewPass_Offset;
+		context.ViewPass = (const char*)pSceneLayer + AFXADDR_GET(cs2_scenesystem_CSceneLayer_m_pszViewPass_offset);
 		context.Flags = *(uint32_t*)((unsigned char*)pSceneLayer + g_SceneLayer_Flags_Offset);*/
 		/*{
 			std::unique_lock<std::shared_timed_mutex> lock(g_RenderParam4ToSceneLayerContextsMutex);
@@ -1202,7 +1195,7 @@ void __fastcall new_DrawSceneData(void * pDrawingData, CBaseSceneData* pSceneDat
 
 		SceneObjectFilterClass filterClass = SceneObjectFilterClass::Unknown;
 		if(pSceneData != nullptr && pSceneData->sceneObject) {
-			if(void* desc = *(void**)((unsigned char*)pSceneData->sceneObject + g_SceneObject_pSceneObjectDesc_Offset)) {
+			if(void* desc = *(void**)((unsigned char*)pSceneData->sceneObject + AFXADDR_GET(cs2_scenesystem_CSceneObject_m_pDesc_offset))) {
 				void** vtable = *(void***)desc;
 				auto it = g_VtableToSceneObjectFilterClass.find(vtable);
 				if(it != g_VtableToSceneObjectFilterClass.end())
@@ -1860,22 +1853,8 @@ void FUN_18009c880(longlong param_1,longlong param_2)
 	org_DrawSceneData = (DrawSceneData_t)AFXADDR_GET(cs2_scenesystem_DrawSceneData);
 	org_DrawCurrentPrimitives = (DrawCurrentPrimitives_t)AFXADDR_GET(cs2_scenesystem_DrawCurrentPrimitives);
 
-	// See notes in HookSceneSystem about DebugSceneData above:
-	g_SceneLayer_pszViewPass_Offset = 0x4b8;
-	g_SceneLayer_Flags_Offset = 0x48;
-	g_SceneObject_pSceneObjectDesc_Offset = 0x18;
-
-	// See notes in HookSceneSystem about DrawSceneData above:
-	//g_SceneData_Flags_Offset = 0x62;
-
-	// Found by looking for known index values (e.g. of C4 model) in the lower 15 bit or the full handle would work too (32 bit):
-	// Also 8b 80 ?? ?? 00 00 8b c8 81 e1 ff 7f 00 00 83 f8 ff
-	// a little above "%ix%i %s:%i (%d)" with " [RE-RENDER: different object flags requested]"
-	// see following
-	// if (*(uint *)(*plVar27 + 0xc0) != 0xffffffff) {
-	//     uVar13 = *(uint *)(*plVar27 + 0xc0) & 0x7fff;
-	// }
-	g_SceneObject_pCBaseHandle_Offset = 0xC0;
+	// The member offsets from the notes above are in addresses.cpp (cs2_scenesystem_CSceneLayer_* / cs2_scenesystem_CSceneObject_*).
+	// DrawSceneData notes above: g_SceneData_Flags_Offset would be 0x62 (currently not used).
 
 	if(//org_RenderLayerDrawListPart &&
 		org_InitDrawingData && org_DrawSceneData && org_DrawCurrentPrimitives) {

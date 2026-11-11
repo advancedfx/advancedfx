@@ -42,7 +42,7 @@ struct CPanel2D {
 		void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[AFXADDR_GET(cs2_client_CPanel2D_GetClientClass_vtable_idx)]) (this);
 
 		if(pClientClass) {
-			return *(const char**)((unsigned char*)pClientClass + 0x8);
+			return *(const char**)((unsigned char*)pClientClass + AFXADDR_GET(cs2_client_CPanel2D_ClientClass_pszName_offset));
 		}
 
 		return nullptr;
@@ -113,7 +113,7 @@ struct CUIPanel {
 	bool setOpacity(float value) {
 		if (nullptr == g_CPanelStyleSetStyleProperty) return false;
 
-		auto style = (u_char*)(this + CS2::PanoramaUIPanel::panelStyle);
+		auto style = (u_char*)(this + AFXADDR_GET(cs2_client_CUIPanel_m_PanelStyle_offset));
 
 		StylePropertyOpacity styleProp;
 		if (!makeOpacityProperty(&styleProp, value)) return false;
@@ -504,7 +504,7 @@ struct myPanoramaWrapper {
 		const auto visibleNotices = findChildInLayoutFile(hudDeathNotice, "VisibleNotices");
 		if (!visibleNotices) return nullptr;
 
-		auto deathnotices = visibleNotices + CS2::PanoramaUIPanel::children;
+		auto deathnotices = visibleNotices + AFXADDR_GET(cs2_client_CUIPanel_m_vecChildren_offset);
 
 		return deathnotices;
 	};
@@ -556,8 +556,8 @@ struct myPanoramaWrapper {
 			}
 		} 
 
-		auto parentPanelId = *(char**)(parentPanel + CS2::PanoramaUIPanel::panelId);
-		auto parentPanel2D = *(CPanel2D**)(parentPanel + 0x8);
+		auto parentPanelId = *(char**)(parentPanel + AFXADDR_GET(cs2_client_CUIPanel_m_pchID_offset));
+		auto parentPanel2D = *(CPanel2D**)(parentPanel + AFXADDR_GET(cs2_client_CUIPanel_m_pClientPanel_offset));
 
 		advancedfx::Message("ClientClass / PanelId:\n");
 		if (0 != parentPanel2D)
@@ -565,7 +565,7 @@ struct myPanoramaWrapper {
 		else 
 			advancedfx::Message("%s / %s\n", "null", parentPanelId);
 
-		const auto children = parentPanel + CS2::PanoramaUIPanel::children;
+		const auto children = parentPanel + AFXADDR_GET(cs2_client_CUIPanel_m_vecChildren_offset);
 		if (!children) {
 			advancedfx::Warning("No children found.\n");
 			return;
@@ -573,8 +573,8 @@ struct myPanoramaWrapper {
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
-			const auto panelId = *(char**)(panel + CS2::PanoramaUIPanel::panelId);
-			auto panel2D = *(CPanel2D**)(panel + 0x8);
+			const auto panelId = *(char**)(panel + AFXADDR_GET(cs2_client_CUIPanel_m_pchID_offset));
+			auto panel2D = *(CPanel2D**)(panel + AFXADDR_GET(cs2_client_CUIPanel_m_pClientPanel_offset));
 
 			if (!panelId && !panel2D) continue;
 
@@ -590,12 +590,12 @@ struct myPanoramaWrapper {
 		std::vector<u_char*> res;
 		if (!parentPanel) return res;
 
-		const auto children = parentPanel + CS2::PanoramaUIPanel::children;
+		const auto children = parentPanel + AFXADDR_GET(cs2_client_CUIPanel_m_vecChildren_offset);
 		if (!children) return res;
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
-			auto panel2D = *(CPanel2D**)(panel + 0x8);
+			auto panel2D = *(CPanel2D**)(panel + AFXADDR_GET(cs2_client_CUIPanel_m_pClientPanel_offset));
 			if (!panel2D) continue;
 
 			auto panelClassName = panel2D->getClassName();
@@ -607,7 +607,7 @@ struct myPanoramaWrapper {
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
-			const auto panelFlags = (u_char)(panel + CS2::PanoramaUIPanel::panelFlags);
+			const auto panelFlags = (u_char)(panel + AFXADDR_GET(cs2_client_CUIPanel_m_Flags_offset));
 			if ((panelFlags & CS2::PanoramaUIPanel::k_EPanelFlag_HasOwnLayoutFile) == 0) {
 				auto found = findChildrenInLayoutFileByClassName(panel, classNameToFind);
 				if (!found.empty()) {
@@ -624,12 +624,12 @@ struct myPanoramaWrapper {
 	u_char* findChildInLayoutFile(u_char* parentPanel, const char* idToFind){
 		if (!parentPanel) return nullptr;
 
-		const auto children = parentPanel + CS2::PanoramaUIPanel::children;
+		const auto children = parentPanel + AFXADDR_GET(cs2_client_CUIPanel_m_vecChildren_offset);
 		if (!children) return nullptr;
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
-			const auto panelId = *(char**)(panel + CS2::PanoramaUIPanel::panelId);
+			const auto panelId = *(char**)(panel + AFXADDR_GET(cs2_client_CUIPanel_m_pchID_offset));
 			if (!panelId) continue;
 			if (strcmp(panelId, idToFind) == 0) {
 				return panel;
@@ -638,7 +638,7 @@ struct myPanoramaWrapper {
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
-			const auto panelFlags = (u_char)(panel + CS2::PanoramaUIPanel::panelFlags);
+			const auto panelFlags = (u_char)(panel + AFXADDR_GET(cs2_client_CUIPanel_m_Flags_offset));
 			if ((panelFlags & CS2::PanoramaUIPanel::k_EPanelFlag_HasOwnLayoutFile) == 0) {
 				if (const auto found = findChildInLayoutFile(panel, idToFind)) {
 					return found;
@@ -651,22 +651,22 @@ struct myPanoramaWrapper {
 
 	void applyColors() {
 		if (nullptr != BorderColor.pointer) {
-			*(uint32_t*)(BorderColor.pointer + 0x38 + 4*0) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
-			*(uint32_t*)(BorderColor.pointer + 0x38 + 4*1) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
-			*(uint32_t*)(BorderColor.pointer + 0x38 + 4*2) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
-			*(uint32_t*)(BorderColor.pointer + 0x38 + 4*3) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
+			*(uint32_t*)(BorderColor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyBorder_m_rgColor_offset) + 4*0) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
+			*(uint32_t*)(BorderColor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyBorder_m_rgColor_offset) + 4*1) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
+			*(uint32_t*)(BorderColor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyBorder_m_rgColor_offset) + 4*2) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
+			*(uint32_t*)(BorderColor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyBorder_m_rgColor_offset) + 4*3) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
 		}
 		if (nullptr != LocalBackgroundColor.pointer) {
-			*(uint32_t*)(LocalBackgroundColor.pointer +0x20) = LocalBackgroundColor.use ? LocalBackgroundColor.value : LocalBackgroundColor.defaultValue;
+			*(uint32_t*)(LocalBackgroundColor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyBackgroundColor_m_Color_offset)) = LocalBackgroundColor.use ? LocalBackgroundColor.value : LocalBackgroundColor.defaultValue;
 		}	
 		if (nullptr != BackgroundColor.pointer) {
-			*(uint32_t*)(BackgroundColor.pointer +0x20) = BackgroundColor.use ? BackgroundColor.value : BackgroundColor.defaultValue;
+			*(uint32_t*)(BackgroundColor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyBackgroundColor_m_Color_offset)) = BackgroundColor.use ? BackgroundColor.value : BackgroundColor.defaultValue;
 		}	
 		if (nullptr != CTcolor.pointer) {
-			*(uint32_t*)(CTcolor.pointer + 0x20) = CTcolor.use ? CTcolor.value : CTcolor.defaultValue;
+			*(uint32_t*)(CTcolor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyForegroundColor_m_Color_offset)) = CTcolor.use ? CTcolor.value : CTcolor.defaultValue;
 		}
 		if (nullptr != Tcolor.pointer) {
-			*(uint32_t*)(Tcolor.pointer + 0x20) = Tcolor.use ? Tcolor.value : Tcolor.defaultValue;
+			*(uint32_t*)(Tcolor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyForegroundColor_m_Color_offset)) = Tcolor.use ? Tcolor.value : Tcolor.defaultValue;
 		}
 	}
 
@@ -1138,13 +1138,13 @@ std::set<u_char*> g_pHudReticle_WashColor_CT;
 
 void SetHudReticleWashColorT(uint32_t value) {
 	for(auto it= g_pHudReticle_WashColor_T.begin(); it != g_pHudReticle_WashColor_T.end(); it++) {
-		*(uint32_t*)(*it + 0x10) = value;
+		*(uint32_t*)(*it + AFXADDR_GET(cs2_panorama_CStylePropertyWashColor_m_Color_offset)) = value;
 	}
 }
 
 void SetHudReticleWashColorCT(uint32_t value) {
 	for(auto it= g_pHudReticle_WashColor_CT.begin(); it != g_pHudReticle_WashColor_CT.end(); it++) {
-		*(uint32_t*)(*it + 0x10) = value;
+		*(uint32_t*)(*it + AFXADDR_GET(cs2_panorama_CStylePropertyWashColor_m_Color_offset)) = value;
 	}
 }
 
