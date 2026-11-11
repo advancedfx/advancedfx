@@ -46,6 +46,41 @@ AFXADDR_DEF(cs2_client_CGlowProperty_ShouldGlow)
 AFXADDR_DEF(cs2_client_C_EnvSky_ForceUpdateSkybox)
 AFXADDR_DEF_INVALID(cs2_client_C_EnvSky_UnkPtr_offset)
 
+AFXADDR_DEF(cs2_client_ViewmodelFunc)
+AFXADDR_DEF(cs2_client_ViewmodelHandFunc)
+
+AFXADDR_DEF(cs2_client_GetDecoratedPlayerName)
+AFXADDR_DEF_INVALID(cs2_client_GetDecoratedPlayerName_GetUserId_vtable_idx)
+AFXADDR_DEF(cs2_client_CCSPlayerController_GetPlayerName)
+
+AFXADDR_DEF_INVALID(cs2_client_CEntityInstance_GetClientClass_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_client_CEntityInstance_IsPlayerPawn_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_client_CEntityInstance_IsPlayerController_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_client_CEntityInstance_GetRenderEyeOrigin_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_client_CEntityInstance_GetRenderEyeAngles_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_client_CGameEntitySystem_OnAddEntity_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_client_CGameEntitySystem_OnRemoveEntity_vtable_idx)
+AFXADDR_DEF(cs2_client_g_pEntityList)
+AFXADDR_DEF(cs2_client_CGameEntitySystem_GetHighestEntityIterator)
+AFXADDR_DEF(cs2_client_CGameEntitySystem_GetEntityFromIndex)
+AFXADDR_DEF(cs2_client_LookupAttachment)
+AFXADDR_DEF(cs2_client_GetAttachment)
+
+AFXADDR_DEF(cs2_client_CGameEventManager_CreateEvent)
+AFXADDR_DEF(cs2_client_CGameEventManager_FireEvent)
+AFXADDR_DEF(cs2_client_CGameEventManager_FireEventClientSide)
+AFXADDR_DEF(cs2_client_CGameEventManager_FreeEvent)
+
+AFXADDR_DEF(cs2_client_CViewRender_SetUpView_IsPlayingDemo)
+AFXADDR_DEF(cs2_client_CViewRender_UnkMakeMatrix)
+AFXADDR_DEF(cs2_client_GetSplitScreenPlayer)
+AFXADDR_DEF_INVALID(cs2_client_CSource2Client_Connect_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_client_CSource2Client_Init_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_client_CSource2Client_Shutdown_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_client_CSource2Client_SetGlobals_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_client_CSource2Client_LevelInitPreEntity_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_client_CSource2Client_FrameStageNotify_vtable_idx)
+
 AFXADDR_DEF(cs2_panorama_CLayoutFile_LoadFromFile)
 AFXADDR_DEF(cs2_panorama_CStylePropertyForegroundColor_Parse)
 AFXADDR_DEF(cs2_panorama_CStylePropertyBackgroundColor_Parse)
@@ -487,6 +522,204 @@ LAB_1809a7de1
 	if (AfxAddr addr = FindPattern(textRange, "48 8D B3 ?? ?? ?? ?? 48 8B 0E 48 85 C9"))
 		AFXADDR_SET(cs2_client_C_EnvSky_UnkPtr_offset, *(uint32_t*)(addr + 3));
 	else ADDR_MISSING(cs2_client_C_EnvSky_UnkPtr_offset);
+
+	//
+	// mirv_viewmodel (ViewModel.cpp)
+
+	// This function references the cvars viewmodel_offset_x, viewmodel_offset_y, viewmodel_offset_z, viewmodel_offset_fov (usually 3rd reference).
+	// can be also found with 00 00 88 42 (68.0 in float), which is max limit for fov
+	// there are 2 similiar functions, make sure to test if it breakes again to not confuse them
+	if (AfxAddr addr = FindPattern(textRange, "40 55 53 56 41 56 41 57 48 8B EC 48 83 EC 20 4D 8B F8 4C 8B F2 48 8B F1"))
+		AFXADDR_SET(cs2_client_ViewmodelFunc, addr);
+	else ADDR_MISSING(cs2_client_ViewmodelFunc);
+
+	// vtable byte offset 0xac8 for "C_CSGO_TeamPreviewModel" class (4th from end.).
+	// This function is called right after the first call to cs2_client_ViewmodelFunc function.
+	if (AfxAddr addr = FindPattern(textRange, "40 53 48 83 EC ?? 80 B9 ?? ?? ?? ?? ?? 48 8B D9 0F 84 ?? ?? ?? ?? 48 8B 89 ?? ?? ?? ?? 48 85 C9 75"))
+		AFXADDR_SET(cs2_client_ViewmodelHandFunc, addr);
+	else ADDR_MISSING(cs2_client_ViewmodelHandFunc);
+
+	//
+	// mirv_replace_name (ReplaceName.cpp)
+
+	// references "<failure>"
+	if (AfxAddr addr = FindPattern(textRange, "40 55 53 41 54 41 55 41 56 41 57 48 8d ac 24 ?? ?? ?? ?? 48 81 ec ?? ?? ?? ?? 4c 8b ea 4c 8b e1 45 84 c9 75 24 44 8b 4a 04 41 f7 c1 ff ff ff 3f"))
+		AFXADDR_SET(cs2_client_GetDecoratedPlayerName, addr);
+	else ADDR_MISSING(cs2_client_GetDecoratedPlayerName);
+
+	// Called on the This of cs2_client_GetDecoratedPlayerName.
+	AFXADDR_SET(cs2_client_GetDecoratedPlayerName_GetUserId_vtable_idx, 7);
+
+	// fn has 3rd reference to string "WWWWWWWWWWWWWWWW"
+	// vtable index was 226 before 2026-09-23 build
+	if (AfxAddr addr = FindVtableFn(clientDll, ".?AVCCSPlayerController@@", 230))
+		AFXADDR_SET(cs2_client_CCSPlayerController_GetPlayerName, addr);
+	else ADDR_MISSING(cs2_client_CCSPlayerController_GetPlayerName);
+
+	//
+	// Entities (ClientEntitySystem.cpp)
+
+	// GetClientClass function.
+	// find it by searching for 4th full-ptr ref to "C_PlantedC4" subtract sizeof(void*) (0x8) and search function that references this struct.
+	// you need to search for raw bytes, GiHidra doesn't seem to find the reference.
+	// was 48 before 2026-09-23 build
+	AFXADDR_SET(cs2_client_CEntityInstance_GetClientClass_vtable_idx, 49);
+
+	// See cl_ent_text drawing function.
+	// was 155 before 2026-09-23 build
+	AFXADDR_SET(cs2_client_CEntityInstance_IsPlayerPawn_vtable_idx, 158);
+
+	// See cl_ent_text drawing function. Near "Pawn: (%d) Name: %s".
+	// was 156 before 2026-09-23 build
+	AFXADDR_SET(cs2_client_CEntityInstance_IsPlayerController_vtable_idx, 159);
+
+	// GetRenderEyeAngles vtable offset minus 1
+	// was 170 before 2026-09-23 build
+	AFXADDR_SET(cs2_client_CEntityInstance_GetRenderEyeOrigin_vtable_idx, 173);
+
+	// See cl_track_render_eye_angles. Near "Render eye angles: %.7f, %.7f, %.7f\n".
+	// was 171 before 2026-09-23 build
+	AFXADDR_SET(cs2_client_CEntityInstance_GetRenderEyeAngles_vtable_idx, 174);
+
+	// https://github.com/bruhmoment21/cs2-sdk
+	AFXADDR_SET(cs2_client_CGameEntitySystem_OnAddEntity_vtable_idx, 15);
+	AFXADDR_SET(cs2_client_CGameEntitySystem_OnRemoveEntity_vtable_idx, 16);
+
+	// "Entities/Client Entity Count"
+	if (AfxAddr addr = FindPattern(textRange, "40 55 53 48 8d ac 24 ?? ?? ?? ?? 48 81 ec ?? ?? ?? ?? 48 8b 0d ?? ?? ?? ?? 33 d2 e8 ?? ?? ?? ??")) {
+		AFXADDR_SET(cs2_client_g_pEntityList, ResolveRel32(addr, 18 + 3, 18 + 7));
+		AFXADDR_SET(cs2_client_CGameEntitySystem_GetHighestEntityIterator, ResolveRel32(addr, 27 + 1, 27 + 5));
+	}
+	else {
+		ADDR_MISSING(cs2_client_g_pEntityList);
+		ADDR_MISSING(cs2_client_CGameEntitySystem_GetHighestEntityIterator);
+	}
+
+	// see near "no such entity %d\n" called with pEntityList and uint
+	// or near "Format: ent_find_index <index>\n" called only with uint and there's pEntityList inside with uint
+	if (AfxAddr addr = FindPattern(textRange, "4c 8d 49 10 81 fa fe 7f 00 00"))
+		AFXADDR_SET(cs2_client_CGameEntitySystem_GetEntityFromIndex, addr);
+	else ADDR_MISSING(cs2_client_CGameEntitySystem_GetEntityFromIndex);
+
+	// these two called one after each other
+	// there is only one placed where they are called together
+	//
+	//                             LAB_1802066cd                                   XREF[1]:     18020660b (j)
+	// 1802066cd 8b  4f  6c       MOV        ECX ,dword ptr [RDI  + 0x6c ]
+	// 1802066d0 83  e9  01       SUB        ECX ,0x1
+	// 1802066d3 0f  84  3d       JZ         LAB_180206816
+	//           01  00  00
+	// 1802066d9 83  f9  01       CMP        ECX ,0x1
+	// 1802066dc 75  4c           JNZ        LAB_18020672a
+	// 1802066de 4c  8b  47  30    MOV        R8,qword ptr [RDI  + 0x30 ]
+	// 1802066e2 48  8d  95       LEA        RDX =>Stack [0x28 ],[RBP  + 0xc0 ]
+	//           c0  00  00  00
+	// 1802066e9 48  8b  ce       MOV        RCX ,RSI
+	// 1802066ec e8  9f  bf       CALL       FUN_1808c2690                                    undefined FUN_1808c2690()
+	//           6b  00
+	// 1802066f1 0f  b6  95       MOVZX      EDX ,byte ptr [RBP  + Stack [0x28 ]]
+	//           c0  00  00  00
+	// 1802066f8 84  d2           TEST       DL,DL
+	// 1802066fa 74  29           JZ         LAB_180206725
+	// 1802066fc 4c  8d  45  b0    LEA        R8=>local_e8 ,[RBP  + -0x50 ]
+	// 180206700 48  8b  ce       MOV        RCX ,RSI
+	// 180206703 e8  78  ca       CALL       FUN_1808b3180                                    undefined FUN_1808b3180()
+	//
+	// to find this place find function with 5 arguments near "Unable to create non-precached breakable%s\n"
+	// then in that function find place like this
+	//
+	//   else if (((*(int *)((longlong)param_4 + 0x6c) == 2) &&
+	//          (FUN_1808c2690(param_3,&param_5,param_4[6]), (char)param_5 != '\0')) &&
+	//         (FUN_1808b3180(param_3,(char)param_5,&local_e8), cVar2 != '\0')) {
+	//   FUN_1815f22b0(param_2,(char)param_5,local_158,&local_108);
+	// }
+	//
+	// first function can be found near "attachment_point" or called with "muzzle_flash" as last arg
+	// second function in some places can be found with offset to m_nAttachmentIndex of CEffectData as 2nd arg
+	//
+	// Since 2026-09-23 the je between the calls is near (0F 84 rel32) instead of short, so the second call is at +27.
+	if (AfxAddr addr = FindPattern(textRange, "E8 ?? ?? ?? ?? 0F B6 95 ?? ?? ?? ?? 84 D2 0F 84 ?? ?? ?? ?? 4C 8D 45 B0 48 8B CE E8 ?? ?? ?? ??")) {
+		AFXADDR_SET(cs2_client_LookupAttachment, ResolveRel32(addr, 1, 5));
+		AFXADDR_SET(cs2_client_GetAttachment, ResolveRel32(addr, 27 + 1, 27 + 5));
+	}
+	else {
+		ADDR_MISSING(cs2_client_LookupAttachment);
+		ADDR_MISSING(cs2_client_GetAttachment);
+	}
+
+	//
+	// Game events (GameEvents.cpp)
+	{
+		void ** vtable = (void **)FindClassVtable((HMODULE)clientDll, ".?AVCGameEventManager@@", 0, 0);
+		if (vtable) {
+			AFXADDR_SET(cs2_client_CGameEventManager_CreateEvent, (AfxAddr)vtable[6]);
+			AFXADDR_SET(cs2_client_CGameEventManager_FireEvent, (AfxAddr)vtable[7]);
+			AFXADDR_SET(cs2_client_CGameEventManager_FireEventClientSide, (AfxAddr)vtable[8]);
+			AFXADDR_SET(cs2_client_CGameEventManager_FreeEvent, (AfxAddr)vtable[10]);
+		}
+		else {
+			ADDR_MISSING(cs2_client_CGameEventManager_CreateEvent);
+			ADDR_MISSING(cs2_client_CGameEventManager_FireEvent);
+			ADDR_MISSING(cs2_client_CGameEventManager_FireEventClientSide);
+			ADDR_MISSING(cs2_client_CGameEventManager_FreeEvent);
+		}
+	}
+
+	//
+	// main.cpp
+
+	/*
+		This is where it checks for engine->IsPlayingDemo() (and afterwards for cl_demoviewoverride (float))
+		before under these conditions it is calling CalcDemoViewOverride, so this is in CViewRender::SetUpView:
+
+00007ffa`178e34ec 488b0d05b37e01   mov     rcx, qword ptr [7FFA190CE7F8h]
+00007ffa`178e34f3 488b01           mov     rax, qword ptr [rcx]
+00007ffa`178e34f6 ff9050010000     call    qword ptr [rax+150h]
+00007ffa`178e34fc 0f57ff           xorps   xmm7, xmm7
+00007ffa`178e34ff 84c0             test    al, al
+00007ffa`178e3501 7457             je      00007FFA178E355A
+00007ffa`178e3503 baffffffff       mov     edx, 0FFFFFFFFh
+                 ff ff
+
+		Since the 2026-09-23 build the cl_demoviewoverride read after the je is "lea rcx, cvar" (was "mov edx, -1")
+		and CViewSetup is held in rbx (mov rbx, rdx at function start), not in r14 anymore.
+	*/
+	if (AfxAddr addr = FindPattern(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 50 01 00 00 0f 57 ff 84 c0 74 ?? 48 8d 0d"))
+		AFXADDR_SET(cs2_client_CViewRender_SetUpView_IsPlayingDemo, addr);
+	else ADDR_MISSING(cs2_client_CViewRender_SetUpView_IsPlayingDemo);
+
+	if (AfxAddr addr = FindVtableFn(clientDll, ".?AVCViewRender@@", 4))
+		AFXADDR_SET(cs2_client_CViewRender_UnkMakeMatrix, addr);
+	else ADDR_MISSING(cs2_client_CViewRender_UnkMakeMatrix);
+
+	/*
+	   GetSplitScreenPlayer(int):
+	   This function is called in GetLocalPlayerController script function in clientDll,
+	   go inside of function there and it's called with 0.
+
+       1808541f0 40 53           PUSH       RBX
+       1808541f2 48 83 ec 20     SUB        RSP,0x20
+       1808541f6 8b 91 9c        MOV        EDX,dword ptr [RCX + 0x9c]
+                 00 00 00
+       1808541fc 48 8b d9        MOV        RBX,RCX
+       1808541ff 83 fa ff        CMP        EDX,-0x1
+       180854202 0f 84 27        JZ         LAB_18085432f
+                 01 00 00
+       180854208 4c 8b 0d        MOV        R9,qword ptr [DAT_1818b7d68]
+                 59 3b 06 01
+       18085420f 4d 85 c9        TEST       R9,R9
+	*/
+	if (AfxAddr addr = FindPattern(textRange, "48 83 EC ?? 83 F9 ?? 75 ?? 48 8B 0D ?? ?? ?? ?? 48 8D 54 24 ?? 48 8B 01 FF 90 ?? ?? ?? ?? 8B 08 48 63 C1 48 8D 0D ?? ?? ?? ?? 48 8B 04 C1 48 83 C4 ?? C3"))
+		AFXADDR_SET(cs2_client_GetSplitScreenPlayer, addr);
+	else ADDR_MISSING(cs2_client_GetSplitScreenPlayer);
+
+	// Source2Client interface (vtable of the interface returned by client.dll's CreateInterface):
+	AFXADDR_SET(cs2_client_CSource2Client_Connect_vtable_idx, 0);
+	AFXADDR_SET(cs2_client_CSource2Client_Init_vtable_idx, 3);
+	AFXADDR_SET(cs2_client_CSource2Client_Shutdown_vtable_idx, 4);
+	AFXADDR_SET(cs2_client_CSource2Client_SetGlobals_vtable_idx, 11);
+	AFXADDR_SET(cs2_client_CSource2Client_LevelInitPreEntity_vtable_idx, 35);
+	AFXADDR_SET(cs2_client_CSource2Client_FrameStageNotify_vtable_idx, 36);
 
 	missing.Report();
 }

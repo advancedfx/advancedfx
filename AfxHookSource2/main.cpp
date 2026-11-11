@@ -1042,65 +1042,30 @@ void HookClientDll(HMODULE clientDll) {
 	if(!bFirstCall) return;
 	bFirstCall = false;
 
-	Afx::BinUtils::MemRange textRange = Afx::BinUtils::MemRange::FromEmpty();
-	Afx::BinUtils::MemRange dataRange = Afx::BinUtils::MemRange::FromEmpty();
-	{
-		Afx::BinUtils::ImageSectionsReader sections((HMODULE)clientDll);
-		if(!sections.Eof()) {
-			textRange = sections.GetMemRange();
-			sections.Next();
-			if(!sections.Eof()){
-				dataRange = sections.GetMemRange();
-			}
-		}
+	if (AfxAddr addr = AFXADDR_GET(cs2_client_CViewRender_SetUpView_IsPlayingDemo)) {
+		/*
+			These are the top 16 bytes we change to:
+
+		4889d9               mov     rcx, rbx <-- CViewSetup
+		48b8???????????????? mov     rax, ???????????????? <-- here we load our hook's address
+		ff10                 call    qword ptr [rax]
+		90                   nop
+		*/
+		unsigned char asmCode[16]={
+			0x48, 0x89, 0xd9,
+			0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+			0xff, 0x10,
+			0x90
+		};
+		static LPVOID ptr = CS2_Client_CSetupView_Trampoline_IsPlayingDemo;
+		LPVOID ptrPtr = &ptr;
+		memcpy(&asmCode[5], &ptrPtr, sizeof(LPVOID));
+
+		MdtMemBlockInfos mbis;
+		MdtMemAccessBegin((LPVOID)addr, 16, &mbis);
+		memcpy((LPVOID)addr, asmCode, 16);
+		MdtMemAccessEnd(&mbis);
 	}
-
-	/*
-		This is where it checks for engine->IsPlayingDemo() (and afterwards for cl_demoviewoverride (float))
-		before under these conditions it is calling CalcDemoViewOverride, so this is in CViewRender::SetUpView:
-
-00007ffa`178e34ec 488b0d05b37e01   mov     rcx, qword ptr [7FFA190CE7F8h]
-00007ffa`178e34f3 488b01           mov     rax, qword ptr [rcx]
-00007ffa`178e34f6 ff9050010000     call    qword ptr [rax+150h]
-00007ffa`178e34fc 0f57ff           xorps   xmm7, xmm7
-00007ffa`178e34ff 84c0             test    al, al
-00007ffa`178e3501 7457             je      00007FFA178E355A
-00007ffa`178e3503 baffffffff       mov     edx, 0FFFFFFFFh
-                 ff ff
-
-	*/
-	{
-		// Since the 2026-09-23 build the cl_demoviewoverride read after the je is "lea rcx, cvar" (was "mov edx, -1")
-		// and CViewSetup is held in rbx (mov rbx, rdx at function start), not in r14 anymore.
-		Afx::BinUtils::MemRange result = FindPatternString(textRange, "48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 50 01 00 00 0f 57 ff 84 c0 74 ?? 48 8d 0d");
-																	  
-		if (!result.IsEmpty()) {
-			/*
-				These are the top 16 bytes we change to:
-
-			4889d9               mov     rcx, rbx <-- CViewSetup
-			48b8???????????????? mov     rax, ???????????????? <-- here we load our hook's address
-			ff10                 call    qword ptr [rax]
-			90                   nop
-			*/
-			unsigned char asmCode[16]={
-				0x48, 0x89, 0xd9,
-				0x48, 0xb8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-				0xff, 0x10,
-				0x90
-			};
-			static LPVOID ptr = CS2_Client_CSetupView_Trampoline_IsPlayingDemo;
-			LPVOID ptrPtr = &ptr;
-			memcpy(&asmCode[5], &ptrPtr, sizeof(LPVOID));
-
-			MdtMemBlockInfos mbis;
-			MdtMemAccessBegin((LPVOID)result.Start, 16, &mbis);
-			memcpy((LPVOID)result.Start, asmCode, 16);
-			MdtMemAccessEnd(&mbis);
-		}
-		else
-			ErrorBox(MkErrStr(__FILE__, __LINE__));
-	}	
 
 	/*
 		The FOV is overridden / computed a second time in the function called in
@@ -1138,7 +1103,7 @@ void HookClientDll(HMODULE clientDll) {
         if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));*/
 
-	if(!Hook_CGameEventManager((void*)clientDll)) ErrorBox(MkErrStr(__FILE__, __LINE__));
+	Hook_CGameEventManager();
 /*
 	if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable(clientDll,".?AVCCSGOVScriptGameSystem@@", 0, 0x10)) {
 		g_Old_CCSGOVScriptGameSystem_UnkAddon = (CCSGOVScriptGameSystem_UnkAddon_t)vtable[0] ;
@@ -1151,57 +1116,26 @@ void HookClientDll(HMODULE clientDll) {
 		else AfxDetourPtr((PVOID *)&(vtable[7]), New_CCSGOVScriptGameSystem_UnkLoadScriptFile, (PVOID*)&g_Old_CCSGOVScriptGameSystem_UnkLoadScriptFile);
 	} else ErrorBox(MkErrStr(__FILE__, __LINE__));*/
 
-	if(void ** vtable = (void**)Afx::BinUtils::FindClassVtable(clientDll,".?AVCViewRender@@", 0, 0x0)) {
-		g_Old_CViewRender_UnkMakeMatrix = (CViewRender_UnkMakeMatrix_t)vtable[4] ;
+	if(AFXADDR_GET(cs2_client_CViewRender_UnkMakeMatrix)) {
+		g_Old_CViewRender_UnkMakeMatrix = (CViewRender_UnkMakeMatrix_t)AFXADDR_GET(cs2_client_CViewRender_UnkMakeMatrix);
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         DetourAttach(&(PVOID&)g_Old_CViewRender_UnkMakeMatrix,New_CViewRender_UnkMakeMatrix);
         if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
-	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	}
 
 	// client entity system related
-	{
-		// "Entities/Client Entity Count"
-		auto unkFn = Afx::BinUtils::FindPatternString(textRange, "40 55 53 48 8d ac 24 ?? ?? ?? ?? 48 81 ec ?? ?? ?? ?? 48 8b 0d ?? ?? ?? ?? 33 d2 e8 ?? ?? ?? ??");
-		if (!unkFn.IsEmpty()) {
-			void * pEntityList = (void *)(unkFn.Start+18+7+*(int*)(unkFn.Start+18+3));
-			void * pFnGetHighestEntityIterator = (void *)(unkFn.Start+27+5+*(int*)(unkFn.Start+27+1));
-
-			// see near "no such entity %d\n" called with pEntityList and uint
-            // or near "Format: ent_find_index <index>\n" called only with uint and there's pEntityList inside with uint
-			auto fnGetEntityFromIndexMem = Afx::BinUtils::FindPatternString(textRange, "4c 8d 49 10 81 fa fe 7f 00 00");
-			if (!fnGetEntityFromIndexMem.IsEmpty()) {
-				auto pFnGetEntityFromIndex = (void*)(fnGetEntityFromIndexMem.Start);
-				if(! Hook_ClientEntitySystem( pEntityList, pFnGetHighestEntityIterator, pFnGetEntityFromIndex )) ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-			} else ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
-
+	if (AFXADDR_GET(cs2_client_g_pEntityList)
+		&& AFXADDR_GET(cs2_client_CGameEntitySystem_GetHighestEntityIterator)
+		&& AFXADDR_GET(cs2_client_CGameEntitySystem_GetEntityFromIndex)) {
+		Hook_ClientEntitySystem(
+			(void *)AFXADDR_GET(cs2_client_g_pEntityList),
+			(void *)AFXADDR_GET(cs2_client_CGameEntitySystem_GetHighestEntityIterator),
+			(void *)AFXADDR_GET(cs2_client_CGameEntitySystem_GetEntityFromIndex));
 	}
-	/*
-	   GetSplitScreenPlayer(int): 
-	   This function is called in GetLocalPlayerController script function in clientDll, 
-	   go inside of function there and it's called with 0.
 
-       1808541f0 40 53           PUSH       RBX
-       1808541f2 48 83 ec 20     SUB        RSP,0x20
-       1808541f6 8b 91 9c        MOV        EDX,dword ptr [RCX + 0x9c]
-                 00 00 00
-       1808541fc 48 8b d9        MOV        RBX,RCX
-       1808541ff 83 fa ff        CMP        EDX,-0x1
-       180854202 0f 84 27        JZ         LAB_18085432f
-                 01 00 00
-       180854208 4c 8b 0d        MOV        R9,qword ptr [DAT_1818b7d68]
-                 59 3b 06 01
-       18085420f 4d 85 c9        TEST       R9,R9
-
-	*/
-	{
-		Afx::BinUtils::MemRange range_get_split_screen_player = Afx::BinUtils::FindPatternString(textRange, "48 83 EC ?? 83 F9 ?? 75 ?? 48 8B 0D ?? ?? ?? ?? 48 8D 54 24 ?? 48 8B 01 FF 90 ?? ?? ?? ?? 8B 08 48 63 C1 48 8D 0D ?? ?? ?? ?? 48 8B 04 C1 48 83 C4 ?? C3");
-		if(!range_get_split_screen_player.IsEmpty()) {
-			Hook_GetSplitScreenPlayer((void*)range_get_split_screen_player.Start);
-		} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	if (AFXADDR_GET(cs2_client_GetSplitScreenPlayer)) {
+		Hook_GetSplitScreenPlayer((void*)AFXADDR_GET(cs2_client_GetSplitScreenPlayer));
 	}
 }
 
@@ -1547,12 +1481,12 @@ void CS2_HookClientDllInterface(void * iface)
 {
 	void ** vtable = *(void***)iface;
 
-	AfxDetourPtr((PVOID *)&(vtable[0]), new_CCS2_Client_Connect, (PVOID*)&old_CCS2_Client_Connect);
-	AfxDetourPtr((PVOID *)&(vtable[3]), new_CCS2_Client_Init, (PVOID*)&old_CCS2_Client_Init);
-	AfxDetourPtr((PVOID *)&(vtable[4]), new_CCS2_Client_Shutdown, (PVOID*)&old_CCS2_Client_Shutdown);
-	AfxDetourPtr((PVOID *)&(vtable[11]), new_CS2_Client_SetGlobals, (PVOID*)&old_CS2_Client_SetGlobals);
-	AfxDetourPtr((PVOID *)&(vtable[35]), new_CS2_Client_LevelInitPreEntity, (PVOID*)&old_CS2_Client_LevelInitPreEntity);
-	AfxDetourPtr((PVOID *)&(vtable[36]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
+	AfxDetourPtr((PVOID *)&(vtable[AFXADDR_GET(cs2_client_CSource2Client_Connect_vtable_idx)]), new_CCS2_Client_Connect, (PVOID*)&old_CCS2_Client_Connect);
+	AfxDetourPtr((PVOID *)&(vtable[AFXADDR_GET(cs2_client_CSource2Client_Init_vtable_idx)]), new_CCS2_Client_Init, (PVOID*)&old_CCS2_Client_Init);
+	AfxDetourPtr((PVOID *)&(vtable[AFXADDR_GET(cs2_client_CSource2Client_Shutdown_vtable_idx)]), new_CCS2_Client_Shutdown, (PVOID*)&old_CCS2_Client_Shutdown);
+	AfxDetourPtr((PVOID *)&(vtable[AFXADDR_GET(cs2_client_CSource2Client_SetGlobals_vtable_idx)]), new_CS2_Client_SetGlobals, (PVOID*)&old_CS2_Client_SetGlobals);
+	AfxDetourPtr((PVOID *)&(vtable[AFXADDR_GET(cs2_client_CSource2Client_LevelInitPreEntity_vtable_idx)]), new_CS2_Client_LevelInitPreEntity, (PVOID*)&old_CS2_Client_LevelInitPreEntity);
+	AfxDetourPtr((PVOID *)&(vtable[AFXADDR_GET(cs2_client_CSource2Client_FrameStageNotify_vtable_idx)]), new_CS2_Client_FrameStageNotify, (PVOID*)&old_CS2_Client_FrameStageNotify);
 }
 
 SOURCESDK::CreateInterfaceFn old_Client_CreateInterface = 0;
