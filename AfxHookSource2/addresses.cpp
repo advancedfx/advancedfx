@@ -127,7 +127,6 @@ AFXADDR_DEF_INVALID(cs2_client_CSource2Client_FrameStageNotify_vtable_idx)
 
 AFXADDR_DEF(cs2_client_CSmokeVolumeSceneObjectDesc_vtable)
 
-AFXADDR_DEF_INVALID(cs2_client_CEntityInstance_m_pEntity_offset)
 AFXADDR_DEF_INVALID(cs2_client_CEntityIdentity_m_pClassInfo_offset)
 AFXADDR_DEF_INVALID(cs2_client_CEntityIdentity_m_EHandle_offset)
 AFXADDR_DEF_INVALID(cs2_client_CEntityIdentity_m_name_offset)
@@ -1019,8 +1018,6 @@ LAB_1809a7de1
 
 	// CEntityIdentity (CEntityInstance::m_pEntity), retrieved from the VSCRIPT entity functions
 	// (see "CEntityInstance: Root class for all entities" and CEntityInstance::GetName etc. in ClientEntitySystem.cpp).
-	// m_pEntity is also in the schema (g_clientDllOffsets.CEntityInstance.m_pEntity), but that is only available later.
-	AFXADDR_SET(cs2_client_CEntityInstance_m_pEntity_offset, 0x10);
 	AFXADDR_SET(cs2_client_CEntityIdentity_m_pClassInfo_offset, 0x8);
 	AFXADDR_SET(cs2_client_CEntityIdentity_m_EHandle_offset, 0x10);
 	AFXADDR_SET(cs2_client_CEntityIdentity_m_name_offset, 0x18);

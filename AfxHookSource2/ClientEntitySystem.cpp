@@ -48,7 +48,7 @@ const char * CEntityInstance::GetName() {
             ...
         }
     */
-	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + AFXADDR_GET(cs2_client_CEntityInstance_m_pEntity_offset)) + AFXADDR_GET(cs2_client_CEntityIdentity_m_name_offset));
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + g_clientDllOffsets.CEntityInstance.m_pEntity) + AFXADDR_GET(cs2_client_CEntityIdentity_m_name_offset));
 	if(pszName) return pszName;
 	return "";
 }
@@ -68,7 +68,7 @@ const char * CEntityInstance::GetDebugName() {
             ...            
         }        
     */    
-	unsigned char * pEntityIdentity = *(unsigned char**)((unsigned char*)this + AFXADDR_GET(cs2_client_CEntityInstance_m_pEntity_offset));
+	unsigned char * pEntityIdentity = *(unsigned char**)((unsigned char*)this + g_clientDllOffsets.CEntityInstance.m_pEntity);
 	const char * pszName = (const char*)*(unsigned char**)(pEntityIdentity + AFXADDR_GET(cs2_client_CEntityIdentity_m_name_offset));
 	if(pszName) return pszName;
 	return **(const char***)(*(unsigned char**)(pEntityIdentity + AFXADDR_GET(cs2_client_CEntityIdentity_m_pClassInfo_offset)) + AFXADDR_GET(cs2_client_CEntityClass_ppszClassName_offset));
@@ -86,7 +86,7 @@ const char * CEntityInstance::GetClassName() {
             ...            
         }        
     */     
-	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + AFXADDR_GET(cs2_client_CEntityInstance_m_pEntity_offset)) + AFXADDR_GET(cs2_client_CEntityIdentity_m_designerName_offset));
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + g_clientDllOffsets.CEntityInstance.m_pEntity) + AFXADDR_GET(cs2_client_CEntityIdentity_m_designerName_offset));
 	if(pszName) return pszName;
 	return "";
 }
