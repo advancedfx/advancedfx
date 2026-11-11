@@ -15,6 +15,26 @@ AFXADDR_DEF(cs2_engine_CRenderService_OnClientOutput)
 
 AFXADDR_DEF_INVALID(cs2_scenesystem_CSceneSystem_WaitForRenderingToComplete_vtable_idx)
 AFXADDR_DEF_INVALID(cs2_scenesystem_CSceneSystem_FrameUpdate_vtable_idx)
+AFXADDR_DEF(cs2_scenesystem_InitDrawingData)
+AFXADDR_DEF(cs2_scenesystem_DrawSceneData)
+AFXADDR_DEF(cs2_scenesystem_DrawCurrentPrimitives)
+AFXADDR_DEF_INVALID(cs2_scenesystem_CSceneView_GetName_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_scenesystem_CSceneObjectDesc_GetName_vtable_idx)
+AFXADDR_DEF(cs2_scenesystem_CBaseSceneObjectDesc_vtable)
+AFXADDR_DEF(cs2_scenesystem_CAnimatableSceneObjectDesc_vtable)
+AFXADDR_DEF(cs2_scenesystem_CAggregateSceneObjectDesc_vtable)
+AFXADDR_DEF(cs2_scenesystem_CSkyBoxObjectDesc_vtable)
+AFXADDR_DEF(cs2_scenesystem_C6FaceSkyboxObjectDesc_vtable)
+AFXADDR_DEF(cs2_scenesystem_CProjectedDecalSceneObjectDesc_vtable)
+
+AFXADDR_DEF(cs2_materialsystem_CMaterial2_FindParam)
+AFXADDR_DEF(cs2_materialsystem_CMaterial2_Update)
+AFXADDR_DEF(cs2_materialsystem_CMaterialSystem2_FindMaterial)
+
+AFXADDR_DEF_INVALID(cs2_resourcesystem_CResourceSystem_GetMaterials_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_resourcesystem_CResourceSystem_PreCache_vtable_idx)
+
+AFXADDR_DEF(cs2_particles_CParticleObjectDesc_vtable)
 
 AFXADDR_DEF_INVALID(cs2_client_CCSGO_HudDeathNotice_lifetime_offset)
 AFXADDR_DEF_INVALID(cs2_client_CCSGO_HudDeathNotice_lifetimemod_offset)
@@ -80,6 +100,8 @@ AFXADDR_DEF_INVALID(cs2_client_CSource2Client_Shutdown_vtable_idx)
 AFXADDR_DEF_INVALID(cs2_client_CSource2Client_SetGlobals_vtable_idx)
 AFXADDR_DEF_INVALID(cs2_client_CSource2Client_LevelInitPreEntity_vtable_idx)
 AFXADDR_DEF_INVALID(cs2_client_CSource2Client_FrameStageNotify_vtable_idx)
+
+AFXADDR_DEF(cs2_client_CSmokeVolumeSceneObjectDesc_vtable)
 
 AFXADDR_DEF(cs2_panorama_CLayoutFile_LoadFromFile)
 AFXADDR_DEF(cs2_panorama_CStylePropertyForegroundColor_Parse)
@@ -269,6 +291,125 @@ void Addresses_InitSceneSystemDll(AfxAddr sceneSystemDll) {
        - "Invalid width/height for ScratchTarget, Size=%i, Width=%i/Height=%i"
     */
     AFXADDR_SET(cs2_scenesystem_CSceneSystem_FrameUpdate_vtable_idx, 74);
+
+	MemRange textRange = GetTextRange(sceneSystemDll);
+	CMissingAddrs missing("scenesystem.dll");
+
+	// See the notes in HookSceneSystem (SceneSystem.cpp) on how to find these.
+
+	// The drawing data flags byte moved (0x230 -> 0x250 in 2026-09-23 build), so it's wildcarded in the patterns below.
+	if (AfxAddr addr = FindPattern(textRange, "48 89 5c 24 08 48 89 6c 24 10 48 89 74 24 18 57 41 54 41 55 41 56 41 57 48 81 ec ?? ?? 00 00 0f b6 81 ?? ?? 00 00 48 8b d9 4c 8b fa"))
+		AFXADDR_SET(cs2_scenesystem_InitDrawingData, addr);
+	else ADDR_MISSING(cs2_scenesystem_InitDrawingData);
+
+	if (AfxAddr addr = FindPattern(textRange, "48 89 5c 24 20 55 48 83 ec 30 f6 81 ?? ?? 00 00 40"))
+		AFXADDR_SET(cs2_scenesystem_DrawSceneData, addr);
+	else ADDR_MISSING(cs2_scenesystem_DrawSceneData);
+
+	if (AfxAddr addr = FindPattern(textRange, "4c 8b dc 53 48 81 ec d0 00 00 00 83 79 30 01 48 8b d9 0f 8c ?? ?? ?? ?? 48 8b 49 20 48 8d 15 ?? ?? ?? ??"))
+		AFXADDR_SET(cs2_scenesystem_DrawCurrentPrimitives, addr);
+	else ADDR_MISSING(cs2_scenesystem_DrawCurrentPrimitives);
+
+	// See DebugSceneData function notes in HookSceneSystem (SceneSystem.cpp).
+	AFXADDR_SET(cs2_scenesystem_CSceneView_GetName_vtable_idx, 0);
+	AFXADDR_SET(cs2_scenesystem_CSceneObjectDesc_GetName_vtable_idx, 0);
+
+	// Scene object descriptors:
+	// vtable[0] - GetDesc()
+	// vtable[1] - DrawArray()
+	// vtable[3] - DrawSingle()
+	if (AfxAddr addr = FindClassVtable((HMODULE)sceneSystemDll, ".?AVCBaseSceneObjectDesc@@", 0, 0))
+		AFXADDR_SET(cs2_scenesystem_CBaseSceneObjectDesc_vtable, addr);
+	else ADDR_MISSING(cs2_scenesystem_CBaseSceneObjectDesc_vtable);
+
+	if (AfxAddr addr = FindClassVtable((HMODULE)sceneSystemDll, ".?AVCAnimatableSceneObjectDesc@@", 0, 0))
+		AFXADDR_SET(cs2_scenesystem_CAnimatableSceneObjectDesc_vtable, addr);
+	else ADDR_MISSING(cs2_scenesystem_CAnimatableSceneObjectDesc_vtable);
+
+	if (AfxAddr addr = FindClassVtable((HMODULE)sceneSystemDll, ".?AVCAggregateSceneObjectDesc@@", 0, 0))
+		AFXADDR_SET(cs2_scenesystem_CAggregateSceneObjectDesc_vtable, addr);
+	else ADDR_MISSING(cs2_scenesystem_CAggregateSceneObjectDesc_vtable);
+
+	if (AfxAddr addr = FindClassVtable((HMODULE)sceneSystemDll, ".?AVCSkyBoxObjectDesc@@", 0, 0))
+		AFXADDR_SET(cs2_scenesystem_CSkyBoxObjectDesc_vtable, addr);
+	else ADDR_MISSING(cs2_scenesystem_CSkyBoxObjectDesc_vtable);
+
+	if (AfxAddr addr = FindClassVtable((HMODULE)sceneSystemDll, ".?AVC6FaceSkyboxObjectDesc@@", 0, 0))
+		AFXADDR_SET(cs2_scenesystem_C6FaceSkyboxObjectDesc_vtable, addr);
+	else ADDR_MISSING(cs2_scenesystem_C6FaceSkyboxObjectDesc_vtable);
+
+	if (AfxAddr addr = FindClassVtable((HMODULE)sceneSystemDll, ".?AVCProjectedDecalSceneObjectDesc@@", 0, 0))
+		AFXADDR_SET(cs2_scenesystem_CProjectedDecalSceneObjectDesc_vtable, addr);
+	else ADDR_MISSING(cs2_scenesystem_CProjectedDecalSceneObjectDesc_vtable);
+
+	missing.Report();
+}
+
+void Addresses_InitMaterialSystem2Dll(AfxAddr materialSystem2Dll) {
+	MemRange textRange = GetTextRange(materialSystem2Dll);
+	CMissingAddrs missing("materialsystem2.dll");
+
+	// 1 xref, called in the middle of 23 function of vtable for CMaterialSystem2
+	//
+	// LAB_18003d0a1                                   XREF[1]:     18003d077 (j)
+	// 18003d0a1 49  8b  d4       MOV        RDX ,R12
+	// 18003d0a4 48  8b  cd       MOV        RCX ,RBP
+	// 18003d0a7 e8  84  4d       CALL       FUN_180011e30 <------
+	//           fd  ff
+	// 18003d0ac 4c  8b  e8       MOV        R13 ,RAX
+	// 18003d0af 4c  8b  fd       MOV        R15 ,RBP
+	// 18003d0b2 48  85  c0       TEST       RAX ,RAX
+	// 18003d0b5 0f  84  16       JZ         LAB_18003d1d1
+	//           01  00  00
+	// 18003d0bb 0f  10  44       MOVUPS     XMM0 ,xmmword ptr [RSP  + local_38[0] ]
+	//           24  30
+	// 18003d0c0 c6  40  38  00    MOV        byte ptr [RAX  + 0x38 ],0x0
+	// 18003d0c4 0f  11  00       MOVUPS     xmmword ptr [RAX ],XMM0
+	// 18003d0c7 8b  86  68       MOV        EAX ,dword ptr [RSI  + 0x568 ]
+	//           05  00  00
+	// 18003d0cd 89  44  24  78    MOV        dword ptr [RSP  + local_res10 ],EAX
+	// 18003d0d1 3b  86  78       CMP        EAX ,dword ptr [RSI  + 0x578 ]
+	//           05  00  00
+	//
+	if (AfxAddr addr = FindPattern(textRange, "E8 ?? ?? ?? ?? 4C 8B E8 4C 8B FD 48 85 C0"))
+		AFXADDR_SET(cs2_materialsystem_CMaterial2_FindParam, ResolveRel32(addr, 1, 5));
+	else ADDR_MISSING(cs2_materialsystem_CMaterial2_FindParam);
+
+	// function call in 30 function of vtable for CMaterial
+	if (AfxAddr addr = FindPattern(textRange, "f6 41 ?? 04 ?? ?? e8 ?? ?? ?? ?? 80 63 ?? fb"))
+		AFXADDR_SET(cs2_materialsystem_CMaterial2_Update, ResolveRel32(addr, 7, 11));
+	else ADDR_MISSING(cs2_materialsystem_CMaterial2_Update);
+
+	// calls 80th function for CResourceSystem, and has 0x74616d76
+	// The 80th for CResourceSystem has following strings:
+	// "WARNING: %s resource '%s' (%016llX) requested but is not in the system. (Missing from from a manifest?)\n"
+	// "ERROR: %s resource '%s' (%016llX) requested is not loaded and may have been deleted.\n"
+	if (AfxAddr addr = FindVtableFn(materialSystem2Dll, ".?AVCMaterialSystem2@@", 14))
+		AFXADDR_SET(cs2_materialsystem_CMaterialSystem2_FindMaterial, addr);
+	else ADDR_MISSING(cs2_materialsystem_CMaterialSystem2_FindMaterial);
+
+	missing.Report();
+}
+
+void Addresses_InitResourceSystemDll(AfxAddr resourceSystemDll) {
+	// In materialsystem2.dll see below in func with
+	// "NOTE: Use mat_print_materials instead, and then click on the hyperlink for a given material. That will call this concommand with the correctly formatted argument.\n"
+	// (**(code **)(*ResourceSystem + 0x128))(ResourceSystem,0x74616d76,local_198, 7);
+	AFXADDR_SET(cs2_resourcesystem_CResourceSystem_GetMaterials_vtable_idx, 32);
+
+	// "Resource \"%s\" was explicitly loaded with a blocking load.\n"
+	// There are 2 precache functions in vtable next to each other, this is first one
+	AFXADDR_SET(cs2_resourcesystem_CResourceSystem_PreCache_vtable_idx, 40);
+}
+
+void Addresses_InitParticlesDll(AfxAddr particlesDll) {
+	CMissingAddrs missing("particles.dll");
+
+	if (AfxAddr addr = FindClassVtable((HMODULE)particlesDll, ".?AVCParticleObjectDesc@@", 0, 0))
+		AFXADDR_SET(cs2_particles_CParticleObjectDesc_vtable, addr);
+	else ADDR_MISSING(cs2_particles_CParticleObjectDesc_vtable);
+
+	missing.Report();
 }
 
 void Addresses_InitClientDll(AfxAddr clientDll) {
@@ -720,6 +861,13 @@ LAB_1809a7de1
 	AFXADDR_SET(cs2_client_CSource2Client_SetGlobals_vtable_idx, 11);
 	AFXADDR_SET(cs2_client_CSource2Client_LevelInitPreEntity_vtable_idx, 35);
 	AFXADDR_SET(cs2_client_CSource2Client_FrameStageNotify_vtable_idx, 36);
+
+	//
+	// Scene object descriptors (SceneSystem.cpp)
+
+	if (AfxAddr addr = FindClassVtable((HMODULE)clientDll, ".?AVCSmokeVolumeSceneObjectDesc@@", 0, 0))
+		AFXADDR_SET(cs2_client_CSmokeVolumeSceneObjectDesc_vtable, addr);
+	else ADDR_MISSING(cs2_client_CSmokeVolumeSceneObjectDesc_vtable);
 
 	missing.Report();
 }

@@ -2088,6 +2088,8 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	{
 		bFirstMaterialsystem2 = false;
 
+		Addresses_InitMaterialSystem2Dll((AfxAddr)hModule);
+
 		HookMaterialSystem(hModule);
 
 		// g_Import_materialsystem2.Apply(hModule);
@@ -2142,10 +2144,12 @@ void LibraryHooksW(HMODULE hModule, LPCWSTR lpLibFileName)
 	{
 		bFirstResourceSystem = false;
 		g_H_ResourceSystemDll = hModule;
+		Addresses_InitResourceSystemDll((AfxAddr)hModule);
 	}
 	else if(bFirstParticles && StringEndsWithW(lpLibFileName, L"particles.dll"))
 	{
 		bFirstParticles = false;
+		Addresses_InitParticlesDll((AfxAddr)hModule);
 		GetParticlesDllSceneObjectVtable(hModule);
 	}
 }

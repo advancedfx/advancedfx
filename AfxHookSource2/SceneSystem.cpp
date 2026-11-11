@@ -110,23 +110,21 @@ uint64_t MurmurHash64B ( const void * key, int len, uint64_t seed )
 }
 
 void CResourceSystem::GetMaterials(GetMaterialsArrayResult* out) {
-	// In materialsystem2.dll see below in func with 
-	// "NOTE: Use mat_print_materials instead, and then click on the hyperlink for a given material. That will call this concommand with the correctly formatted argument.\n"
-	// (**(code **)(*ResourceSystem + 0x128))(ResourceSystem,0x74616d76,local_198, 7);
+	if (AFXADDR_INVALID == AFXADDR_GET(cs2_resourcesystem_CResourceSystem_GetMaterials_vtable_idx)) return;
+
 	typedef void (__fastcall * GetMaterials_t)(void* This, uint64_t magic, GetMaterialsArrayResult* out, uint8_t unk);
 	void** vtable = *(void***)(this);
-	auto org_GetMaterials = (GetMaterials_t)vtable[32];
+	auto org_GetMaterials = (GetMaterials_t)vtable[AFXADDR_GET(cs2_resourcesystem_CResourceSystem_GetMaterials_vtable_idx)];
 
 	org_GetMaterials(this, 0x74616d76, out, 7);
 }
 
 CMaterial2** CResourceSystem::PreCache (const char* name) {
-	// resourcesystem.dll
-	// "Resource \"%s\" was explicitly loaded with a blocking load.\n"
-	// There are 2 precache functions in vtable next to each other, this is first one
+	if (AFXADDR_INVALID == AFXADDR_GET(cs2_resourcesystem_CResourceSystem_PreCache_vtable_idx)) return nullptr;
+
 	typedef CMaterial2** (__fastcall * PreCacheFn_t)(void* This, CBufferStringWrapper* name, const char* unk);
 	void** vtable = *(void***)(this);
-	auto org_PreCache = (PreCacheFn_t)vtable[40];
+	auto org_PreCache = (PreCacheFn_t)vtable[AFXADDR_GET(cs2_resourcesystem_CResourceSystem_PreCache_vtable_idx)];
 
 	// client dll
 	// see where func is called with "FixupResourceName: Illegal full path passed in (\"%s\")!\n" 
@@ -780,9 +778,8 @@ static const char* GetSceneObjectDescName(const CBaseSceneData& sceneData) {
 	void* desc = *(void**)((unsigned char*)sceneData.sceneObject + g_SceneObject_pSceneObjectDesc_Offset);
 	if (desc == nullptr) return nullptr;
 
- 	// See notes in HookSceneSystem about DebugSceneData for vtabel offset:
 	void** vtable = *(void***)desc;
-	return ((const char* (__fastcall*)(void*))vtable[0])(desc);
+	return ((const char* (__fastcall*)(void*))vtable[AFXADDR_GET(cs2_scenesystem_CSceneObjectDesc_GetName_vtable_idx)])(desc);
 }
 
 /* This doesn't seem quite correct, removing feature for now.
@@ -1094,7 +1091,7 @@ void SetContextFromDrawingData(SceneLayerContext & context, void * pDrawingData)
 	void * pSceneLayer = ((void**)pDrawingData)[1];
 	
 	void** pSceneViewVtable = *(void***)pSceneView;
-	context.ViewName = ((const char* (__fastcall*)(void*))pSceneViewVtable[0])(pSceneView); // see DebugSceneData function for how to know it's fist function in vtable.
+	context.ViewName = ((const char* (__fastcall*)(void*))pSceneViewVtable[AFXADDR_GET(cs2_scenesystem_CSceneView_GetName_vtable_idx)])(pSceneView);
 
 	context.ViewPass = (const char*)pSceneLayer + g_SceneLayer_pszViewPass_Offset;
 
@@ -1671,72 +1668,30 @@ void ScenePicker_Console(advancedfx::ICommandArgs* args) {
 }
 
 void HookMaterialSystem(HMODULE materialSystemDll) {
-	// 1 xref, called in the middle of 23 function of vtable for CMaterialSystem2
-	//
-	// LAB_18003d0a1                                   XREF[1]:     18003d077 (j)   
-    // 18003d0a1 49  8b  d4       MOV        RDX ,R12
-    // 18003d0a4 48  8b  cd       MOV        RCX ,RBP
-    // 18003d0a7 e8  84  4d       CALL       FUN_180011e30 <------
-    //           fd  ff
-    // 18003d0ac 4c  8b  e8       MOV        R13 ,RAX
-    // 18003d0af 4c  8b  fd       MOV        R15 ,RBP
-    // 18003d0b2 48  85  c0       TEST       RAX ,RAX
-    // 18003d0b5 0f  84  16       JZ         LAB_18003d1d1
-    //           01  00  00
-    // 18003d0bb 0f  10  44       MOVUPS     XMM0 ,xmmword ptr [RSP  + local_38[0] ]
-    //           24  30
-    // 18003d0c0 c6  40  38  00    MOV        byte ptr [RAX  + 0x38 ],0x0
-    // 18003d0c4 0f  11  00       MOVUPS     xmmword ptr [RAX ],XMM0
-    // 18003d0c7 8b  86  68       MOV        EAX ,dword ptr [RSI  + 0x568 ]
-    //           05  00  00
-    // 18003d0cd 89  44  24  78    MOV        dword ptr [RSP  + local_res10 ],EAX
-    // 18003d0d1 3b  86  78       CMP        EAX ,dword ptr [RSI  + 0x578 ]
-    //           05  00  00
-    //
-	if (auto addr = getAddress(materialSystemDll, "E8 ?? ?? ?? ?? 4C 8B E8 4C 8B FD 48 85 C0")) {
-		org_MaterialFindParam = (MaterialFindParam_t)(addr + 5 + *(int32_t*)(addr + 1));
-	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
-	
-	// function call in 30 function of vtable for CMaterial
-	if (auto addr = getAddress(materialSystemDll, "f6 41 ?? 04 ?? ?? e8 ?? ?? ?? ?? 80 63 ?? fb")) {
-		org_MaterialUpdate = (MaterialUpdate_t)(addr + 11 + *(int32_t*)(addr + 7));
-	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-	// calls 80th function for CResourceSystem, and has 0x74616d76
-	// The 80th for CResourceSystem has following strings:
-	// "WARNING: %s resource '%s' (%016llX) requested but is not in the system. (Missing from from a manifest?)\n"
-	// "ERROR: %s resource '%s' (%016llX) requested is not loaded and may have been deleted.\n"
-	org_FindMaterial = (FindMaterial_t)getVTableFn(materialSystemDll, 14, ".?AVCMaterialSystem2@@");
-	if (0 == org_FindMaterial) ErrorBox(MkErrStr(__FILE__, __LINE__));
+	org_MaterialFindParam = (MaterialFindParam_t)AFXADDR_GET(cs2_materialsystem_CMaterial2_FindParam);
+	org_MaterialUpdate = (MaterialUpdate_t)AFXADDR_GET(cs2_materialsystem_CMaterial2_Update);
+	org_FindMaterial = (FindMaterial_t)AFXADDR_GET(cs2_materialsystem_CMaterialSystem2_FindMaterial);
 }
 
-void GetSceneObjectVtable(HMODULE dll, const char * mangledClass, SceneObjectFilterClass filterClass) {
-	if (void ** vtable = (void **)Afx::BinUtils::FindClassVtable(dll, mangledClass, 0, 0)) {
-		// vtable[0] - GetDesc()
-		// vtable[1] - DrawArray()
-		// vtable[3] - DrawSingle()
-		g_VtableToSceneObjectFilterClass[vtable] = filterClass;
-	} else {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		ErrorBox(mangledClass);
-	}
+void AddSceneObjectVtable(AfxAddr vtable, SceneObjectFilterClass filterClass) {
+	if (vtable) g_VtableToSceneObjectFilterClass[(void **)vtable] = filterClass;
 }
 
 void GetClientDllSceneObjectVtable(HMODULE clientDll) {
-	GetSceneObjectVtable(clientDll, ".?AVCSmokeVolumeSceneObjectDesc@@", SceneObjectFilterClass::SmokeVolume);
+	AddSceneObjectVtable(AFXADDR_GET(cs2_client_CSmokeVolumeSceneObjectDesc_vtable), SceneObjectFilterClass::SmokeVolume);
 }
 
 void GetParticlesDllSceneObjectVtable(HMODULE particlesDll) {
-	GetSceneObjectVtable(particlesDll, ".?AVCParticleObjectDesc@@", SceneObjectFilterClass::Particles);
+	AddSceneObjectVtable(AFXADDR_GET(cs2_particles_CParticleObjectDesc_vtable), SceneObjectFilterClass::Particles);
 }
 
 void HookSceneSystem(HMODULE sceneSystemDll) {
-	GetSceneObjectVtable(sceneSystemDll, ".?AVCBaseSceneObjectDesc@@", SceneObjectFilterClass::Base);
-	GetSceneObjectVtable(sceneSystemDll, ".?AVCAnimatableSceneObjectDesc@@", SceneObjectFilterClass::Animatable);
-	GetSceneObjectVtable(sceneSystemDll, ".?AVCAggregateSceneObjectDesc@@", SceneObjectFilterClass::Aggregate);
-	GetSceneObjectVtable(sceneSystemDll, ".?AVCSkyBoxObjectDesc@@", SceneObjectFilterClass::SkyBox);
-	GetSceneObjectVtable(sceneSystemDll, ".?AVC6FaceSkyboxObjectDesc@@", SceneObjectFilterClass::SkyBox6Face);
-	GetSceneObjectVtable(sceneSystemDll, ".?AVCProjectedDecalSceneObjectDesc@@", SceneObjectFilterClass::ProjectedDecal);
+	AddSceneObjectVtable(AFXADDR_GET(cs2_scenesystem_CBaseSceneObjectDesc_vtable), SceneObjectFilterClass::Base);
+	AddSceneObjectVtable(AFXADDR_GET(cs2_scenesystem_CAnimatableSceneObjectDesc_vtable), SceneObjectFilterClass::Animatable);
+	AddSceneObjectVtable(AFXADDR_GET(cs2_scenesystem_CAggregateSceneObjectDesc_vtable), SceneObjectFilterClass::Aggregate);
+	AddSceneObjectVtable(AFXADDR_GET(cs2_scenesystem_CSkyBoxObjectDesc_vtable), SceneObjectFilterClass::SkyBox);
+	AddSceneObjectVtable(AFXADDR_GET(cs2_scenesystem_C6FaceSkyboxObjectDesc_vtable), SceneObjectFilterClass::SkyBox6Face);
+	AddSceneObjectVtable(AFXADDR_GET(cs2_scenesystem_CProjectedDecalSceneObjectDesc_vtable), SceneObjectFilterClass::ProjectedDecal);
 
 /*
 // References "RenderLayerDrawListPart"
@@ -1901,15 +1856,9 @@ void FUN_18009c880(longlong param_1,longlong param_2)
 	//org_RenderLayerDrawListPart = (RenderLayerDrawListPart_t)getAddress(sceneSystemDll, "4c 89 4c 24 20 4c 89 44 24 18 48 89 54 24 10 48 89 4c 24 08 55 53 56 57 41 57 48 8d 6c 24 e0 48 81 ec 20 01 00 00");
 	//if (0 == org_RenderLayerDrawListPart) ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-	// The drawing data flags byte moved (0x230 -> 0x250 in 2026-09-23 build), so it's wildcarded in the patterns below.
-	org_InitDrawingData = (InitDrawingData_t)getAddress(sceneSystemDll, "48 89 5c 24 08 48 89 6c 24 10 48 89 74 24 18 57 41 54 41 55 41 56 41 57 48 81 ec ?? ?? 00 00 0f b6 81 ?? ?? 00 00 48 8b d9 4c 8b fa");
-	if (0 == org_InitDrawingData) ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-	org_DrawSceneData = (DrawSceneData_t)getAddress(sceneSystemDll, "48 89 5c 24 20 55 48 83 ec 30 f6 81 ?? ?? 00 00 40");
-	if (0 == org_DrawSceneData) ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-	org_DrawCurrentPrimitives = (DrawCurrentPrimitives_t)getAddress(sceneSystemDll, "4c 8b dc 53 48 81 ec d0 00 00 00 83 79 30 01 48 8b d9 0f 8c ?? ?? ?? ?? 48 8b 49 20 48 8d 15 ?? ?? ?? ??");
-	if (0 == org_DrawCurrentPrimitives) ErrorBox(MkErrStr(__FILE__, __LINE__));
+	org_InitDrawingData = (InitDrawingData_t)AFXADDR_GET(cs2_scenesystem_InitDrawingData);
+	org_DrawSceneData = (DrawSceneData_t)AFXADDR_GET(cs2_scenesystem_DrawSceneData);
+	org_DrawCurrentPrimitives = (DrawCurrentPrimitives_t)AFXADDR_GET(cs2_scenesystem_DrawCurrentPrimitives);
 
 	// See notes in HookSceneSystem about DebugSceneData above:
 	g_SceneLayer_pszViewPass_Offset = 0x4b8;
