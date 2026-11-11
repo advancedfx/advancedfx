@@ -5,36 +5,79 @@
 
 #include "../shared/binutils.h"
 
+#include <string>
+#include <vector>
+
 using namespace Afx::BinUtils;
 
 AFXADDR_DEF(cs2_engine_HostStateRequest_Start)
-AFXADDR_DEF(cs2_engine_CRenderService_OnClientOutput);
+AFXADDR_DEF(cs2_engine_CRenderService_OnClientOutput)
 
-AFXADDR_DEF(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx);
-AFXADDR_DEF(cs2_SceneSystem_FrameUpdate_vtable_idx);
+AFXADDR_DEF_INVALID(cs2_scenesystem_CSceneSystem_WaitForRenderingToComplete_vtable_idx)
+AFXADDR_DEF_INVALID(cs2_scenesystem_CSceneSystem_FrameUpdate_vtable_idx)
 
-AFXADDR_DEF(cs2_deathmsg_lifetime_offset)
-AFXADDR_DEF(cs2_deathmsg_lifetimemod_offset)
+AFXADDR_DEF_INVALID(cs2_client_CCSGO_HudDeathNotice_lifetime_offset)
+AFXADDR_DEF_INVALID(cs2_client_CCSGO_HudDeathNotice_lifetimemod_offset)
 
 AFXADDR_DEF(cs2_client_RenderInitScopeOverlay)
 
+namespace {
+
+MemRange GetTextRange(AfxAddr dll) {
+	ImageSectionsReader imageSectionsReader((HMODULE)dll);
+	if (!imageSectionsReader.Eof())
+		return imageSectionsReader.GetMemRange();
+
+	ErrorBox(MkErrStr(__FILE__, __LINE__));
+	return MemRange(0, 0);
+}
+
+/// <summary>Collects addresses that could not be found in a DLL and reports them.</summary>
+/// <remarks>Each missing address is printed as a warning to the console right away.
+///   Required ones are also collected and shown in a single error box when Report() is called.</remarks>
+class CMissingAddrs {
+public:
+	CMissingAddrs(char const * dllName) : m_DllName(dllName) {
+	}
+
+	void Add(char const * name, bool required = true) {
+		advancedfx::Warning("AFXERROR: Could not find %s in %s.\n", name, m_DllName);
+		if (required) m_Required.emplace_back(name);
+	}
+
+	void Report() {
+		if (m_Required.empty()) return;
+
+		std::string text = "Could not find the following in ";
+		text += m_DllName;
+		text += " (probably due to a game update), related features will not work:\n";
+		for (char const * name : m_Required) {
+			text += "\n";
+			text += name;
+		}
+		ErrorBox(text.c_str());
+	}
+
+private:
+	char const * m_DllName;
+	std::vector<char const *> m_Required;
+};
+
+} // namespace {
+
+#define ADDR_MISSING(name) missing.Add(#name, true)
+#define ADDR_MISSING_OPTIONAL(name) missing.Add(#name, false)
+
 void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 {
-	MemRange textRange = MemRange(0, 0);
-	{
-		ImageSectionsReader imageSectionsReader((HMODULE)engine2Dll);
-		if (!imageSectionsReader.Eof())
-		{
-			textRange = imageSectionsReader.GetMemRange();
-		}
-		else ErrorBox(MkErrStr(__FILE__, __LINE__));
-	}
+	MemRange textRange = GetTextRange(engine2Dll);
+	CMissingAddrs missing("engine2.dll");
 
     /*  cs2_engine_HostStateRequest_Start
         The function in question references this string: "HostStateRequest::Start(HSR_QUIT)\n"
-                                FUN_180217fc0                                   XREF[4]:     FUN_18021a010:18021a18e(c), 
-                                                                                            1805ba12c(*), 1805ba13c(*), 
-                                                                                            18091557c(*)  
+                                FUN_180217fc0                                   XREF[4]:     FUN_18021a010:18021a18e(c),
+                                                                                            1805ba12c(*), 1805ba13c(*),
+                                                                                            18091557c(*)
         180217fc0 40 53           PUSH       RBX
         180217fc2 48 83 ec 40     SUB        RSP,0x40
         180217fc6 8b 01           MOV        EAX,dword ptr [RCX]
@@ -60,12 +103,8 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
     */
     {
 		MemRange result = FindPatternString(textRange, "40 53 48 83 ec 40 8b 01 48 8b d9 c6 41 18 01 83 f8 02 74 07 83 f8 04 75 21 eb 0d");
-																	  
-		if (!result.IsEmpty()) {
-            AFXADDR_SET(cs2_engine_HostStateRequest_Start, result.Start);
-		}
-		else
-			ErrorBox(MkErrStr(__FILE__, __LINE__));
+		if (!result.IsEmpty()) AFXADDR_SET(cs2_engine_HostStateRequest_Start, result.Start);
+		else ADDR_MISSING(cs2_engine_HostStateRequest_Start);
     }
 
     /*  cs2_engine_CRenderService_OnClientOutput
@@ -82,7 +121,7 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
        1801e5720 48 8d 05        LEA        RAX,[s_C:\buildworker\csgo_rel_win64\bu_18055a   = "C:\\buildworker\\csgo_rel_win
                  49 53 37 00
        1801e5727 48 c7 44        MOV        qword ptr [RSP + local_68[8]],0x19d
-                 24 38 9d 
+                 24 38 9d
                  01 00 00
        1801e5730 48 89 44        MOV        qword ptr [RSP + local_68[0]],RAX=>s_C:\buildw   = "C:\\buildworker\\csgo_rel_win
                  24 30
@@ -115,47 +154,41 @@ void Addresses_InitEngine2Dll(AfxAddr engine2Dll)
 	{
 		// 49 c7 43 b0 xx xx 00 00 is a source line number (VProf scope), it changes with engine updates.
 		MemRange result = FindPatternString(textRange, "4c 8b dc 49 89 5b 10 49 89 6b 18 49 89 73 20 57 41 56 41 57 48 83 ec 70 49 c7 43 b0 ?? ?? 00 00");
-																	  
-		if (!result.IsEmpty()) {
-            AFXADDR_SET(cs2_engine_CRenderService_OnClientOutput, result.Start);
-		}
-		else
-			ErrorBox(MkErrStr(__FILE__, __LINE__));
+		if (!result.IsEmpty()) AFXADDR_SET(cs2_engine_CRenderService_OnClientOutput, result.Start);
+		else ADDR_MISSING(cs2_engine_CRenderService_OnClientOutput);
 	}
+
+	missing.Report();
 }
 
 void Addresses_InitSceneSystemDll(AfxAddr sceneSystemDll) {
 
-    /*cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx 
-    
+    /*cs2_scenesystem_CSceneSystem_WaitForRenderingToComplete_vtable_idx
+
        To find the right function search for references to strings:
        - "WaitForRenderingToComplete".
     */
-    AFXADDR_SET(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx, 26);
+    AFXADDR_SET(cs2_scenesystem_CSceneSystem_WaitForRenderingToComplete_vtable_idx, 26);
 
-    /*cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx 
-    
+    /*cs2_scenesystem_CSceneSystem_FrameUpdate_vtable_idx
+
        To find the right function search for references to strings:
        - "FrameUpdate"
        - "CSceneSystem::FrameUpdate"
        - "Invalid width/height for ScratchTarget, Size=%i, Width=%i/Height=%i"
     */
-    AFXADDR_SET(cs2_SceneSystem_FrameUpdate_vtable_idx, 74);
+    AFXADDR_SET(cs2_scenesystem_CSceneSystem_FrameUpdate_vtable_idx, 74);
 }
 
 void Addresses_InitClientDll(AfxAddr clientDll) {
-	MemRange textRange = MemRange(0, 0);
-	{
-		ImageSectionsReader imageSectionsReader((HMODULE)clientDll);
-		if (!imageSectionsReader.Eof())
-		{
-			textRange = imageSectionsReader.GetMemRange();
-		}
-		else ErrorBox(MkErrStr(__FILE__, __LINE__));
-	}
+	MemRange textRange = GetTextRange(clientDll);
+	CMissingAddrs missing("client.dll");
 
-	// in the end of g_Original_handlePlayerDeath function (see DeatMsg.cpp)
-      /*
+	/*  cs2_client_CCSGO_HudDeathNotice_lifetime_offset
+	    cs2_client_CCSGO_HudDeathNotice_lifetimemod_offset
+
+	    In the end of g_Original_handlePlayerDeath function (see DeatMsg.cpp):
+
             FUN_180e05690(lVar11,DAT_182413994,*(undefined4 *)(PTR_DAT_18208ed60 + 0x30));
             FUN_180e05690(lVar11,DAT_18241399c,*(undefined4 *)(param_1 + 0x78));
             if ((cVar4 == '\0') && ((char)uVar19 == '\0')) {
@@ -165,19 +198,21 @@ void Addresses_InitClientDll(AfxAddr clientDll) {
             uVar5 = *(undefined4 *)(param_1 + 0x7c);
             }
             FUN_180e05690(lVar11,DAT_1824139a4,uVar5);
-            return;      
-      */
+            return;
+	*/
 	{
 		MemRange result = FindPatternString(textRange, "f3 0f 10 53 ?? e8 ?? ?? ?? ?? 45 84 e4 75 0f 45 84 ff 75 ?? f3 0f 10 15 ?? ?? ?? ?? eb 05 f3 0f 10 53 ??");
 		if (!result.IsEmpty()) {
-                  AFXADDR_SET(cs2_deathmsg_lifetime_offset, *(uint8_t*)(result.Start + 4));
-                  AFXADDR_SET(cs2_deathmsg_lifetimemod_offset, *(uint8_t*)(result.Start + 34));
+			AFXADDR_SET(cs2_client_CCSGO_HudDeathNotice_lifetime_offset, *(uint8_t*)(result.Start + 4));
+			AFXADDR_SET(cs2_client_CCSGO_HudDeathNotice_lifetimemod_offset, *(uint8_t*)(result.Start + 34));
 		}
-		else
-			ErrorBox(MkErrStr(__FILE__, __LINE__));
+		else {
+			ADDR_MISSING(cs2_client_CCSGO_HudDeathNotice_lifetime_offset);
+			ADDR_MISSING(cs2_client_CCSGO_HudDeathNotice_lifetimemod_offset);
+		}
 	}
 
-      /*    cs2_client_RenderScopeOverlay
+      /*    cs2_client_RenderInitScopeOverlay
 
             The function is called in the render pipleline function that refrences strings such as "Create PerViewConstantBufferCsgo_t",
             "intermediate_depth_rt", "intermediate_color_rt", somewhat after the string ref "Engine2/RenderingPipeline/AmbientOcclusionProxies"
@@ -198,16 +233,15 @@ void Addresses_InitClientDll(AfxAddr clientDll) {
                   // ...
                   local_res10[0] = 0x3f800000;
                   local_res18[0] = 0;
-                  FUN_18075e050(local_res8,*(undefined4 *)(param_1[2] + 0x38));                  
+                  FUN_18075e050(local_res8,*(undefined4 *)(param_1[2] + 0x38));
                   // ...
             }
       */
-      {
+	{
 		MemRange result = FindPatternString(textRange, "48 8b c4 53 57 48 83 ec 68 48 8b fa 44 0f 29 40 b8");
-		if (!result.IsEmpty()) {
-                  AFXADDR_SET(cs2_client_RenderInitScopeOverlay, result.Start);
-		}
-		else
-			ErrorBox(MkErrStr(__FILE__, __LINE__));
-      }
+		if (!result.IsEmpty()) AFXADDR_SET(cs2_client_RenderInitScopeOverlay, result.Start);
+		else ADDR_MISSING(cs2_client_RenderInitScopeOverlay);
+	}
+
+	missing.Report();
 }

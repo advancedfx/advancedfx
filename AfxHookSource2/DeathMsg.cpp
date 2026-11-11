@@ -936,13 +936,12 @@ g_Original_handlePlayerDeath_t g_Original_handlePlayerDeath = nullptr;
 
 void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameEvent* gameEvent) {
 
-	if (!AFXADDR_GET(cs2_deathmsg_lifetime_offset) || !AFXADDR_GET(cs2_deathmsg_lifetimemod_offset)) {
-		advancedfx::Warning("AFXERROR: deathmsg offsets not installed.\n");
+	if (AFXADDR_INVALID == AFXADDR_GET(cs2_client_CCSGO_HudDeathNotice_lifetime_offset) || AFXADDR_INVALID == AFXADDR_GET(cs2_client_CCSGO_HudDeathNotice_lifetimemod_offset)) {
 		return g_Original_handlePlayerDeath(hudDeathNotice, gameEvent);
 	}
 
-	auto lifetimeOffset = (uint8_t)AFXADDR_GET(cs2_deathmsg_lifetime_offset);
-	auto lifetimeModOffset = (uint8_t)AFXADDR_GET(cs2_deathmsg_lifetimemod_offset);
+	auto lifetimeOffset = AFXADDR_GET(cs2_client_CCSGO_HudDeathNotice_lifetime_offset);
+	auto lifetimeModOffset = AFXADDR_GET(cs2_client_CCSGO_HudDeathNotice_lifetimemod_offset);
 
 	float orgDeathNoticeLifetime, orgDeathNoticeLocalPlayerLifetimeMod;
 
