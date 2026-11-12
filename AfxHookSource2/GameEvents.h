@@ -1,3 +1,3 @@
 #pragma once
 
-bool Hook_CGameEventManager(void* addrClientDll);
+bool Hook_CGameEventManager();

@@ -39,11 +39,10 @@ g_CPanelStyleSetStyleProperty_t g_CPanelStyleSetStyleProperty = nullptr;
 
 struct CPanel2D {
 	const char* getClassName() {
-		// in case it breaks see nearby functions in vtable, it just returns DAT
-		void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[61]) (this);
+		void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[AFXADDR_GET(cs2_client_CPanel2D_GetClientClass_vtable_idx)]) (this);
 
 		if(pClientClass) {
-			return *(const char**)((unsigned char*)pClientClass + 0x8);
+			return *(const char**)((unsigned char*)pClientClass + AFXADDR_GET(cs2_client_CPanel2D_ClientClass_pszName_offset));
 		}
 
 		return nullptr;
@@ -112,7 +111,9 @@ bool makeOpacityProperty(StylePropertyOpacity* out, float value) {
 
 struct CUIPanel {
 	bool setOpacity(float value) {
-		auto style = (u_char*)(this + CS2::PanoramaUIPanel::panelStyle);
+		if (nullptr == g_CPanelStyleSetStyleProperty) return false;
+
+		auto style = (u_char*)(this + AFXADDR_GET(cs2_client_CUIPanel_m_PanelStyle_offset));
 
 		StylePropertyOpacity styleProp;
 		if (!makeOpacityProperty(&styleProp, value)) return false;
@@ -126,17 +127,8 @@ struct CUIPanel {
 currentGameCamera g_CurrentGameCamera;
 
 namespace CS2 {
-	namespace PanoramaUIPanel {
-		ptrdiff_t getAttributeString = 0;
-		ptrdiff_t setAttributeString = 0;
-	}
-
 	namespace PanoramaPanelStyle {
 		ptrdiff_t setPanelStyleProperty = 0;
-	}
-
-	namespace PanoramaUIEngine {
-		ptrdiff_t makeSymbol = 0;
 	}
 };
 
@@ -493,7 +485,7 @@ struct myPanoramaWrapper {
 		}
 
 		typedef short(__fastcall *makeSymbol_t)(u_char* ptr, int type, const char* name);
-		const auto makeSymbol = *(makeSymbol_t*)((*(u_char**)(*pUIEngine)) + CS2::PanoramaUIEngine::makeSymbol);
+		const auto makeSymbol = (makeSymbol_t)((*(void***)(*pUIEngine))[AFXADDR_GET(cs2_client_CUIEngine_MakeSymbol_vtable_idx)]);
 
 		lifeTimeSymbol = makeSymbol(*pUIEngine, 0, "Lifetime");
 		spawnTimeSymbol = makeSymbol(*pUIEngine, 0, "SpawnTime");
@@ -512,7 +504,7 @@ struct myPanoramaWrapper {
 		const auto visibleNotices = findChildInLayoutFile(hudDeathNotice, "VisibleNotices");
 		if (!visibleNotices) return nullptr;
 
-		auto deathnotices = visibleNotices + CS2::PanoramaUIPanel::children;
+		auto deathnotices = visibleNotices + AFXADDR_GET(cs2_client_CUIPanel_m_vecChildren_offset);
 
 		return deathnotices;
 	};
@@ -531,10 +523,10 @@ struct myPanoramaWrapper {
 			const auto panel = ((u_char***)pDeathnotices)[1][i];
 
 			typedef const char* (__fastcall *getAttributeString_t)(u_char* ptr, short attributeName, const char* defaultValue);
-			const auto getAttributeString = *(getAttributeString_t*)(*(u_char**)panel + CS2::PanoramaUIPanel::getAttributeString);
+			const auto getAttributeString = (getAttributeString_t)((*(void***)panel)[AFXADDR_GET(cs2_client_CUIPanel_GetAttributeString_vtable_idx)]);
 
 			typedef void* (__fastcall *setAttributeString_t)(u_char* ptr, short attributeName, const char* defaultValue);
-			const auto setAttributeString = *(setAttributeString_t*)(*(u_char**)panel + CS2::PanoramaUIPanel::setAttributeString);
+			const auto setAttributeString = (setAttributeString_t)((*(void***)panel)[AFXADDR_GET(cs2_client_CUIPanel_SetAttributeString_vtable_idx)]);
 
 			const auto lifetimeString = getAttributeString(panel, lifeTimeSymbol, "");
 			if (!lifetimeString || strlen(lifetimeString) == 0) continue;
@@ -564,8 +556,8 @@ struct myPanoramaWrapper {
 			}
 		} 
 
-		auto parentPanelId = *(char**)(parentPanel + CS2::PanoramaUIPanel::panelId);
-		auto parentPanel2D = *(CPanel2D**)(parentPanel + 0x8);
+		auto parentPanelId = *(char**)(parentPanel + AFXADDR_GET(cs2_client_CUIPanel_m_pchID_offset));
+		auto parentPanel2D = *(CPanel2D**)(parentPanel + AFXADDR_GET(cs2_client_CUIPanel_m_pClientPanel_offset));
 
 		advancedfx::Message("ClientClass / PanelId:\n");
 		if (0 != parentPanel2D)
@@ -573,7 +565,7 @@ struct myPanoramaWrapper {
 		else 
 			advancedfx::Message("%s / %s\n", "null", parentPanelId);
 
-		const auto children = parentPanel + CS2::PanoramaUIPanel::children;
+		const auto children = parentPanel + AFXADDR_GET(cs2_client_CUIPanel_m_vecChildren_offset);
 		if (!children) {
 			advancedfx::Warning("No children found.\n");
 			return;
@@ -581,8 +573,8 @@ struct myPanoramaWrapper {
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
-			const auto panelId = *(char**)(panel + CS2::PanoramaUIPanel::panelId);
-			auto panel2D = *(CPanel2D**)(panel + 0x8);
+			const auto panelId = *(char**)(panel + AFXADDR_GET(cs2_client_CUIPanel_m_pchID_offset));
+			auto panel2D = *(CPanel2D**)(panel + AFXADDR_GET(cs2_client_CUIPanel_m_pClientPanel_offset));
 
 			if (!panelId && !panel2D) continue;
 
@@ -598,12 +590,12 @@ struct myPanoramaWrapper {
 		std::vector<u_char*> res;
 		if (!parentPanel) return res;
 
-		const auto children = parentPanel + CS2::PanoramaUIPanel::children;
+		const auto children = parentPanel + AFXADDR_GET(cs2_client_CUIPanel_m_vecChildren_offset);
 		if (!children) return res;
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
-			auto panel2D = *(CPanel2D**)(panel + 0x8);
+			auto panel2D = *(CPanel2D**)(panel + AFXADDR_GET(cs2_client_CUIPanel_m_pClientPanel_offset));
 			if (!panel2D) continue;
 
 			auto panelClassName = panel2D->getClassName();
@@ -615,7 +607,7 @@ struct myPanoramaWrapper {
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
-			const auto panelFlags = (u_char)(panel + CS2::PanoramaUIPanel::panelFlags);
+			const auto panelFlags = (u_char)(panel + AFXADDR_GET(cs2_client_CUIPanel_m_Flags_offset));
 			if ((panelFlags & CS2::PanoramaUIPanel::k_EPanelFlag_HasOwnLayoutFile) == 0) {
 				auto found = findChildrenInLayoutFileByClassName(panel, classNameToFind);
 				if (!found.empty()) {
@@ -632,12 +624,12 @@ struct myPanoramaWrapper {
 	u_char* findChildInLayoutFile(u_char* parentPanel, const char* idToFind){
 		if (!parentPanel) return nullptr;
 
-		const auto children = parentPanel + CS2::PanoramaUIPanel::children;
+		const auto children = parentPanel + AFXADDR_GET(cs2_client_CUIPanel_m_vecChildren_offset);
 		if (!children) return nullptr;
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
-			const auto panelId = *(char**)(panel + CS2::PanoramaUIPanel::panelId);
+			const auto panelId = *(char**)(panel + AFXADDR_GET(cs2_client_CUIPanel_m_pchID_offset));
 			if (!panelId) continue;
 			if (strcmp(panelId, idToFind) == 0) {
 				return panel;
@@ -646,7 +638,7 @@ struct myPanoramaWrapper {
 
 		for (int i = 0; i < *(int*)children; ++i) {
 			const auto panel = ((u_char***)children)[1][i];
-			const auto panelFlags = (u_char)(panel + CS2::PanoramaUIPanel::panelFlags);
+			const auto panelFlags = (u_char)(panel + AFXADDR_GET(cs2_client_CUIPanel_m_Flags_offset));
 			if ((panelFlags & CS2::PanoramaUIPanel::k_EPanelFlag_HasOwnLayoutFile) == 0) {
 				if (const auto found = findChildInLayoutFile(panel, idToFind)) {
 					return found;
@@ -659,22 +651,22 @@ struct myPanoramaWrapper {
 
 	void applyColors() {
 		if (nullptr != BorderColor.pointer) {
-			*(uint32_t*)(BorderColor.pointer + 0x38 + 4*0) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
-			*(uint32_t*)(BorderColor.pointer + 0x38 + 4*1) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
-			*(uint32_t*)(BorderColor.pointer + 0x38 + 4*2) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
-			*(uint32_t*)(BorderColor.pointer + 0x38 + 4*3) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
+			*(uint32_t*)(BorderColor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyBorder_m_rgColor_offset) + 4*0) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
+			*(uint32_t*)(BorderColor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyBorder_m_rgColor_offset) + 4*1) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
+			*(uint32_t*)(BorderColor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyBorder_m_rgColor_offset) + 4*2) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
+			*(uint32_t*)(BorderColor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyBorder_m_rgColor_offset) + 4*3) = BorderColor.use ? BorderColor.value : BorderColor.defaultValue;
 		}
 		if (nullptr != LocalBackgroundColor.pointer) {
-			*(uint32_t*)(LocalBackgroundColor.pointer +0x20) = LocalBackgroundColor.use ? LocalBackgroundColor.value : LocalBackgroundColor.defaultValue;
+			*(uint32_t*)(LocalBackgroundColor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyBackgroundColor_m_Color_offset)) = LocalBackgroundColor.use ? LocalBackgroundColor.value : LocalBackgroundColor.defaultValue;
 		}	
 		if (nullptr != BackgroundColor.pointer) {
-			*(uint32_t*)(BackgroundColor.pointer +0x20) = BackgroundColor.use ? BackgroundColor.value : BackgroundColor.defaultValue;
+			*(uint32_t*)(BackgroundColor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyBackgroundColor_m_Color_offset)) = BackgroundColor.use ? BackgroundColor.value : BackgroundColor.defaultValue;
 		}	
 		if (nullptr != CTcolor.pointer) {
-			*(uint32_t*)(CTcolor.pointer + 0x20) = CTcolor.use ? CTcolor.value : CTcolor.defaultValue;
+			*(uint32_t*)(CTcolor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyForegroundColor_m_Color_offset)) = CTcolor.use ? CTcolor.value : CTcolor.defaultValue;
 		}
 		if (nullptr != Tcolor.pointer) {
-			*(uint32_t*)(Tcolor.pointer + 0x20) = Tcolor.use ? Tcolor.value : Tcolor.defaultValue;
+			*(uint32_t*)(Tcolor.pointer + AFXADDR_GET(cs2_panorama_CStylePropertyForegroundColor_m_Color_offset)) = Tcolor.use ? Tcolor.value : Tcolor.defaultValue;
 		}
 	}
 
@@ -936,13 +928,12 @@ g_Original_handlePlayerDeath_t g_Original_handlePlayerDeath = nullptr;
 
 void __fastcall handleDeathnotice(u_char* hudDeathNotice, SOURCESDK::CS2::IGameEvent* gameEvent) {
 
-	if (!AFXADDR_GET(cs2_deathmsg_lifetime_offset) || !AFXADDR_GET(cs2_deathmsg_lifetimemod_offset)) {
-		advancedfx::Warning("AFXERROR: deathmsg offsets not installed.\n");
+	if (AFXADDR_INVALID == AFXADDR_GET(cs2_client_CCSGO_HudDeathNotice_lifetime_offset) || AFXADDR_INVALID == AFXADDR_GET(cs2_client_CCSGO_HudDeathNotice_lifetimemod_offset)) {
 		return g_Original_handlePlayerDeath(hudDeathNotice, gameEvent);
 	}
 
-	auto lifetimeOffset = (uint8_t)AFXADDR_GET(cs2_deathmsg_lifetime_offset);
-	auto lifetimeModOffset = (uint8_t)AFXADDR_GET(cs2_deathmsg_lifetimemod_offset);
+	auto lifetimeOffset = AFXADDR_GET(cs2_client_CCSGO_HudDeathNotice_lifetime_offset);
+	auto lifetimeModOffset = AFXADDR_GET(cs2_client_CCSGO_HudDeathNotice_lifetimemod_offset);
 
 	float orgDeathNoticeLifetime, orgDeathNoticeLocalPlayerLifetimeMod;
 
@@ -1147,13 +1138,13 @@ std::set<u_char*> g_pHudReticle_WashColor_CT;
 
 void SetHudReticleWashColorT(uint32_t value) {
 	for(auto it= g_pHudReticle_WashColor_T.begin(); it != g_pHudReticle_WashColor_T.end(); it++) {
-		*(uint32_t*)(*it + 0x10) = value;
+		*(uint32_t*)(*it + AFXADDR_GET(cs2_panorama_CStylePropertyWashColor_m_Color_offset)) = value;
 	}
 }
 
 void SetHudReticleWashColorCT(uint32_t value) {
 	for(auto it= g_pHudReticle_WashColor_CT.begin(); it != g_pHudReticle_WashColor_CT.end(); it++) {
-		*(uint32_t*)(*it + 0x10) = value;
+		*(uint32_t*)(*it + AFXADDR_GET(cs2_panorama_CStylePropertyWashColor_m_Color_offset)) = value;
 	}
 }
 
@@ -1241,236 +1232,56 @@ void __fastcall My_Panorama_CStylePropertyWashColor_Clone(void * This, void * pT
 	}
 }
 
-void getDeathMsgAddrs(HMODULE clientDll) {
-	// can be found with strings like "attacker" and "userid", etc. it basically takes all info from player_death event, called by rbanch in a function that references "player_death", "realtime_passthrough"
-	if (auto addr = getAddress(clientDll, "48 89 4C 24 ?? 55 53 41 55 41 56 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 02")) {
-		g_Original_handlePlayerDeath = (g_Original_handlePlayerDeath_t)(addr);
-	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
-
-	// called in multiple places with strings like "userid", "attacker", etc. as first argument, length as second argument and length XOR 0x31415926
-	// e.g. in function above too
-	if (auto addr = getAddress(clientDll, "48 83 EC 28 45 8B D0 4C 8B C9 48 83 FA 04 0F 82 ?? ?? ?? ?? 0F B6 09 48 89 5C 24 20 8D 41 BF 3C 19 77 03 80 C1 20")) {
-		g_Original_hashString = (g_Original_hashString_t)(addr);
-	} else ErrorBox(MkErrStr(__FILE__, __LINE__));	
-
-	// snippet from function handlePlayerDeath above	
-	//   if (*(char *)(lVar17 + 0xb8) == '\0') {
-	//     uVar18 = FUN_1808a1a00();
-	//
-	//     iVar10 = FUN_1808af610(uVar18); // the one we need called here, it returns local steamid, function has 2 xrefs
-	//									   // later there is check if attackersteamid is equal to local one
-	//
-	//     if (((iVar10 != 0) && (plVar14 != (longlong *)0x0)) &&
-	//        (piVar13 = (int *)FUN_18056a170(plVar14,&uStackX_20), *piVar13 == iVar10)) {
-	//       bVar4 = true;
-	//     }
-	//   }
-	size_t g_Original_getLocalSteamId_addr = getAddress(clientDll,"40 53 48 83 EC ?? 8B 51 ?? 48 8B D9 83 FA FF 0F 84 ?? ?? ?? ?? 4C 8B 0D ?? ?? ?? ??");
-	if (0 == g_Original_getLocalSteamId_addr) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));	
-	};
-
-	g_Original_getLocalSteamId = (g_Original_getLocalSteamId_t)(g_Original_getLocalSteamId_addr);
-};
-
-bool getPanoramaAddrsFromClient(HMODULE clientDll) {
-	// credit https://github.com/danielkrupinski/Osiris
-	
-/* In the middle of big function with MULTIPLE (3+) references to "Attempted to cast panel '%s' to type '%s'" and multiple to "file://{images}/%s.png":
-        }
-LAB_1809a7daf:
-        if (DAT_181fc46d8 != (longlong *)0x0) {
-          local_230 = FUN_1809bf960; <-- next 2 sigs in this one!!!
-          local_238 = lVar12;
-          (**(code **)(*DAT_181fc46d8 + 0x120))(DAT_181fc46d8,DAT_181c51f4c,plVar11,&local_238);
-        }
-      }
-LAB_1809a7de1
-*/
-/*
-                             LAB_1809bf9e6                                   XREF[1]:     1809bf9d9(j)  
-       1809bf9e6 48 8b 4f 08     MOV        RCX,qword ptr [RDI + 0x8]
-       1809bf9ea 4c 8d 05        LEA        R8,[DAT_1814ed000]
-                 0f d6 b2 00
-       1809bf9f1 0f b7 12        MOVZX      EDX=>DAT_181e808b8,word ptr [RDX]
-       1809bf9f4 48 8b 01        MOV        RAX,qword ptr [RCX]
-       1809bf9f7 ff 90 d0        CALL       qword ptr [RAX + 0x8d0]
-                 08 00 00
-       1809bf9fd 48 8b f0        MOV        RSI,RAX
-       1809bfa00 48 85 c0        TEST       RAX,RAX
-*/
-	if (auto addr = getAddress(clientDll,"48 8b 4f 08 4c 8d 05 ?? ?? ?? ?? 0f b7 12 48 8b 01 ff 90 ?? ?? ?? ?? 48 8b f0 48 85 c0"); addr != 0) {
-		CS2::PanoramaUIPanel::getAttributeString = *(int32_t*)((unsigned char*)addr + 19);
-	} else {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
+bool getDeathMsgAddrs() {
+	if (0 == AFXADDR_GET(cs2_client_CCSGO_HudDeathNotice_HandlePlayerDeath)
+		|| 0 == AFXADDR_GET(cs2_client_HashString)
+		|| 0 == AFXADDR_GET(cs2_client_GetLocalSteamId))
 		return false;
-	}
 
-/*
-                             LAB_1809bfa6a                                   XREF[1]:     1809bfa5d(j)  
-       1809bfa6a 48 8b 4f 08     MOV        RCX,qword ptr [RDI + 0x8]
-       1809bfa6e 4c 8d 05        LEA        R8,[DAT_1814ed000]
-                 8b d5 b2 00
-       1809bfa75 0f b7 13        MOVZX      EDX,word ptr [RBX]=>DAT_181e808b8
-       1809bfa78 48 8b 01        MOV        RAX,qword ptr [RCX]
-       1809bfa7b ff 90 00        CALL       qword ptr [RAX + 0x900]
-                 09 00 00
-       1809bfa81 b0 01           MOV        AL,0x1
-       1809bfa83 e9 1a ff        JMP        LAB_1809bf9a2
-                 ff ff
-*/
-	if (auto addr = getAddress(clientDll,"48 8b 4f 08 4c 8d 05 ?? ?? ?? ?? 0f b7 13 48 8b 01 ff 90 ?? ?? ?? ?? b0 01 e9 ?? ?? ?? ??"); addr != 0) {
-		CS2::PanoramaUIPanel::setAttributeString = *(int32_t*)((unsigned char*)addr + 19);
-	} else {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return false;
-	}
-
-	// "Can\'t call Panorama Symbol constructor outside panorama.dll until UIEngine is i nitialized! Symbol: %s"
-	if (auto addr = getAddress(clientDll,"48 8B 01 4C 8B C3 BA ?? ?? ?? ?? FF 90 ?? ?? ?? ?? 48 8B 5C 24 ?? 66 89 07"); addr != 0) {
-		CS2::PanoramaUIEngine::makeSymbol = *(int32_t*)((unsigned char*)addr + 13);
-	} else {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return false;
-	}
-
-	// function has "file://{resources}/layout/hud/hud.xml" string and also references CCSGO_Hud vftable
-	// hudpanel is DAT that param_1 assigned to     
-	size_t g_HudPanel_addr = getAddress(clientDll, "48 89 86 ?? ?? ?? ?? 48 89 35 ?? ?? ?? ??");
-	if (g_HudPanel_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));	
-		return false;
-	} else {
-		g_HudPanel_addr += 10;
-	};
-
-	// function has CreatePanelWithCurrentContext string
-	// engine is DAT that param_1 assigned to
-	size_t g_CUIEngine_addr = getAddress(clientDll, "48 89 78 ?? 48 89 0D ?? ?? ?? ??");
-	if (g_CUIEngine_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));	
-		return false;
-	} else {
-		g_CUIEngine_addr += 7;
-	};
-
-	uint32_t g_HudPanel_offset;
-	std::memcpy(&g_HudPanel_offset, (void*)(g_HudPanel_addr), sizeof(g_HudPanel_offset));
-	g_myPanoramaWrapper.pHudPanel = (u_char**)(g_HudPanel_addr + g_HudPanel_offset + 4);
-
-	uint32_t g_CUIEngine_offset;
-	std::memcpy(&g_CUIEngine_offset, (void*)(g_CUIEngine_addr), sizeof(g_CUIEngine_offset));
-	g_myPanoramaWrapper.pUIEngine = (u_char**)(g_CUIEngine_addr + g_CUIEngine_offset + 4);
+	g_Original_handlePlayerDeath = (g_Original_handlePlayerDeath_t)AFXADDR_GET(cs2_client_CCSGO_HudDeathNotice_HandlePlayerDeath);
+	g_Original_hashString = (g_Original_hashString_t)AFXADDR_GET(cs2_client_HashString);
+	g_Original_getLocalSteamId = (g_Original_getLocalSteamId_t)AFXADDR_GET(cs2_client_GetLocalSteamId);
 
 	return true;
 };
 
-bool getPanoramaAddrs(HMODULE panoramaDll) {
-
-	// Refernces "CLayoutFile::LoadFromFile" string.
-	g_Org_Panorama_CLayoutFile_LoadFromFile = (Panorama_CLayoutFile_LoadFromFile_t)getAddress(panoramaDll,"48 89 5C 24 08 55 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 60 48 8D 05 ?? ?? ?? ?? 48 C7 45 D0 ?? ?? 00 00 48"); // 48 C7 45 D0 xx xx = source line number
-	if(nullptr == g_Org_Panorama_CLayoutFile_LoadFromFile) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));	
+bool getPanoramaAddrsFromClient() {
+	if (AFXADDR_INVALID == AFXADDR_GET(cs2_client_CUIPanel_GetAttributeString_vtable_idx)
+		|| AFXADDR_INVALID == AFXADDR_GET(cs2_client_CUIPanel_SetAttributeString_vtable_idx)
+		|| AFXADDR_INVALID == AFXADDR_GET(cs2_client_CUIEngine_MakeSymbol_vtable_idx)
+		|| 0 == AFXADDR_GET(cs2_client_g_pHudPanel)
+		|| 0 == AFXADDR_GET(cs2_client_g_pUIEngine))
 		return false;
-	}
 
-	{
-		void **vtable = (void**)Afx::BinUtils::FindClassVtable(panoramaDll,".?AVCStylePropertyForegroundColor@panorama@@",0,0);
-		if(nullptr == vtable) {
-			ErrorBox(MkErrStr(__FILE__, __LINE__));	
-			return false;
-		}
-		g_Org_Panorama_CStylePropertyForegroundColor_Parse = (Panorama_CStyleProperty_Parse_t)vtable[6];
-	}
+	g_myPanoramaWrapper.pHudPanel = (u_char**)AFXADDR_GET(cs2_client_g_pHudPanel);
+	g_myPanoramaWrapper.pUIEngine = (u_char**)AFXADDR_GET(cs2_client_g_pUIEngine);
 
-	{
-		void **vtable = (void**)Afx::BinUtils::FindClassVtable(panoramaDll,".?AVCStylePropertyBackgroundColor@panorama@@",0,0);
-		if(nullptr == vtable) {
-			ErrorBox(MkErrStr(__FILE__, __LINE__));	
-			return false;
-		}
-		g_Org_Panorama_CStylePropertyBackgroundColor_Parse = (Panorama_CStyleProperty_Parse_t)vtable[6];
-	}
+	return true;
+};
 
-	{
-		void **vtable = (void**)Afx::BinUtils::FindClassVtable(panoramaDll,".?AVCStylePropertyBorder@panorama@@",0,0);
-		if(nullptr == vtable) {
-			ErrorBox(MkErrStr(__FILE__, __LINE__));	
-			return false;
-		}
-		g_Org_Panorama_CStylePropertyBorder_Parse = (Panorama_CStyleProperty_Parse_t)vtable[6];
-	}
+bool getPanoramaAddrs() {
+	if (0 == AFXADDR_GET(cs2_panorama_CLayoutFile_LoadFromFile)
+		|| 0 == AFXADDR_GET(cs2_panorama_CStylePropertyForegroundColor_Parse)
+		|| 0 == AFXADDR_GET(cs2_panorama_CStylePropertyBackgroundColor_Parse)
+		|| 0 == AFXADDR_GET(cs2_panorama_CStylePropertyBorder_Parse)
+		|| 0 == AFXADDR_GET(cs2_panorama_CStylePropertyWashColor_Clone)
+		|| 0 == AFXADDR_GET(cs2_panorama_CStylePropertyWashColor_Parse)
+		|| 0 == AFXADDR_GET(cs2_panorama_CStylePropertyOpacity_vtable)
+		|| (0 == AFXADDR_GET(cs2_panorama_CStyleSymbol_Resolve) && 0 == AFXADDR_GET(cs2_panorama_g_StylePropertySymbols)))
+		return false;
 
-	{
-		void **vtable = (void**)Afx::BinUtils::FindClassVtable(panoramaDll,".?AVCStylePropertyWashColor@panorama@@",0,0);
-		if(nullptr == vtable) {
-			ErrorBox(MkErrStr(__FILE__, __LINE__));	
-			return false;
-		}
-		g_Org_Panorama_CStylePropertyWashColor_Clone = (Panorama_CStyleProperty_Clone_t)vtable[1];
-		g_Org_Panorama_CStylePropertyWashColor_Parse = (Panorama_CStyleProperty_Parse_t)vtable[6];
-	}		
+	g_Org_Panorama_CLayoutFile_LoadFromFile = (Panorama_CLayoutFile_LoadFromFile_t)AFXADDR_GET(cs2_panorama_CLayoutFile_LoadFromFile);
+	g_Org_Panorama_CStylePropertyForegroundColor_Parse = (Panorama_CStyleProperty_Parse_t)AFXADDR_GET(cs2_panorama_CStylePropertyForegroundColor_Parse);
+	g_Org_Panorama_CStylePropertyBackgroundColor_Parse = (Panorama_CStyleProperty_Parse_t)AFXADDR_GET(cs2_panorama_CStylePropertyBackgroundColor_Parse);
+	g_Org_Panorama_CStylePropertyBorder_Parse = (Panorama_CStyleProperty_Parse_t)AFXADDR_GET(cs2_panorama_CStylePropertyBorder_Parse);
+	g_Org_Panorama_CStylePropertyWashColor_Clone = (Panorama_CStyleProperty_Clone_t)AFXADDR_GET(cs2_panorama_CStylePropertyWashColor_Clone);
+	g_Org_Panorama_CStylePropertyWashColor_Parse = (Panorama_CStyleProperty_Parse_t)AFXADDR_GET(cs2_panorama_CStylePropertyWashColor_Parse);
+	g_CStylePropertyOpacity_vtable = (void**)AFXADDR_GET(cs2_panorama_CStylePropertyOpacity_vtable);
 
-	{
-		g_CStylePropertyOpacity_vtable = (void**)Afx::BinUtils::FindClassVtable(panoramaDll,".?AVCStylePropertyOpacity@panorama@@",0,0);
-		if(nullptr == g_CStylePropertyOpacity_vtable) {
-			ErrorBox(MkErrStr(__FILE__, __LINE__));	
-			return false;
-		}
-	}		
+	g_PanoramaStylePropertySymbols.resolve = (StylePropertySymbolMap::Resolve_t)AFXADDR_GET(cs2_panorama_CStyleSymbol_Resolve);
+	g_PanoramaStylePropertySymbols.symbols = (SOURCESDK::CS2::CUtlMap<SOURCESDK::CS2::CUtlString, uint8_t>*)AFXADDR_GET(cs2_panorama_g_StylePropertySymbols);
 
-	{
-		// Resolve style properties through Panorama's own lookup function. This
-		// avoids depending on the private map layout for normal operation while
-		// retaining the map below for diagnostics and as a fallback.
-		//
-		// fn refernces string "panorama::CStyleSymbol::CStyleSymbol" 4 times
-		auto addr = getAddress(panoramaDll, "40 55 56 57 41 54 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 44 8B 05 ?? ?? ?? ?? 48 8B F9 65 48 8B 04 25 58 00 00 00 45 33 E4 C6 01 FF 48 8B F2");
-		if (addr) {
-			g_PanoramaStylePropertySymbols.resolve = (StylePropertySymbolMap::Resolve_t)addr;
-		}
-	}
-
-	{
-		// (in function of g_PanoramaStylePropertySymbols.resolve)
-		// before it jumps to error branch for "Need to increase size of static g_StylePropertyRegistrations (MAX_PANORAMA_STYLE_SYMBOLS) before registering more styles, failed on %s"
-		/*
-      		lVar9 = DAT_180510350;
-			if ((uVar12 & 0x7fffffff) == 0) {
-				lVar9 = lVar13;
-			}
-			puVar1 = (undefined4 *)((longlong)iVar5 * 0x20 + 0x10 + lVar9);
-			*puVar1 = (undefined4)local_68;
-			puVar1[1] = local_68._4_4_;
-			puVar1[2] = (undefined4)uStack_60;
-			puVar1[3] = uStack_60._4_4_;
-			local_70 = local_80;
-			FUN_180099640(&DAT_180510348,iVar5,local_78); <-- DAT_180510348 is what we are after, since might sometimes be the result of a function called before this one, but right now it's inlined.
-			_DAT_18051035c = _DAT_18051035c + 1;
-	  	*/
-		auto addr = getAddress(panoramaDll, "0f 10 45 f7 48 8d 0d ?? ?? ?? ?? 41 f7 c0 ff ff ff 7f");
-		if (0 == addr) {
-			if (!g_PanoramaStylePropertySymbols.resolve) {
-				ErrorBox(MkErrStr(__FILE__, __LINE__));
-				return false;
-			}
-			advancedfx::Warning("AFXWARNING: Panorama style-symbol map is unavailable; style lookup will use the resolver.\n");
-		}
-		else {
-			auto out = addr + 11 + *(int32_t*)(addr + 7);
-			g_PanoramaStylePropertySymbols.symbols = (SOURCESDK::CS2::CUtlMap<SOURCESDK::CS2::CUtlString, uint8_t>*)(out);
-		}
-	}
-
-	{
-		// Can be found in constructor for any CStyleProperty
-		// e.g. see 44th fn in vtable for CPanelStyle
-		auto addr = getAddress(panoramaDll, "E8 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 45 ?? EB");
-		if (addr) {
-			g_CPanelStyleSetStyleProperty = (g_CPanelStyleSetStyleProperty_t)(addr + 5 + *(int32_t*)(addr + 1));
-		} else 
-			ErrorBox(MkErrStr(__FILE__, __LINE__));	
-	}
+	g_CPanelStyleSetStyleProperty = (g_CPanelStyleSetStyleProperty_t)AFXADDR_GET(cs2_panorama_CPanelStyle_SetStyleProperty);
 
 	return true;
 };
@@ -1479,7 +1290,7 @@ void HookPanorama(HMODULE panoramaDll)
 {
 	if (g_myPanoramaWrapper.hooked) return;
 
-	if (!getPanoramaAddrs(panoramaDll)) return;
+	if (!getPanoramaAddrs()) return;
 
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
@@ -1502,8 +1313,8 @@ void HookPanorama(HMODULE panoramaDll)
 void HookDeathMsg(HMODULE clientDll) {
 	if (g_MirvDeathMsgGlobals.hooked) return;
 
-    getDeathMsgAddrs(clientDll);
-	if (!getPanoramaAddrsFromClient(clientDll)) return;
+	if (!getPanoramaAddrsFromClient()) return;
+	if (!getDeathMsgAddrs()) return;
 
 	DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());

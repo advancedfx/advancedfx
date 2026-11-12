@@ -1,5 +1,6 @@
 #include "SchemaSystem.h"
 #include "Globals.h"
+#include "addresses.h"
 #include <winsock.h>
 
 ClientDllOffsets_t g_clientDllOffsets;
@@ -124,29 +125,9 @@ void initSchemaSystemOffsets()
 
 void HookSchemaSystem(HMODULE schemaSystemDll)
 {
+	SDK::CSchemaSystem* schemaSystem = (SDK::CSchemaSystem*)AFXADDR_GET(cs2_schemasystem_g_SchemaSystem);
 
-   // 18000d8a7 48  89  05       MOV        qword ptr [DAT_180076730 ],RAX
-   //           82  8e  06  00
-   // 18000d8ae 4c  8d  0d       LEA        R9,[s_schema_list_bindings_<substring>_1800548   = "schema_list_bindings <substri
-   //           0b  70  04  00
-   // 18000d8b5 33  c0           XOR        EAX ,EAX
-   // 18000d8b7 48  c7  05       MOV        qword ptr [DAT_18007675c ],0xc80000
-   //           9a  8e  06 
-   //           00  00  00 
-	size_t instructionAddr = getAddress(schemaSystemDll, "48 89 05 ?? ?? ?? ?? 4C 8D 0D ?? ?? ?? ?? 33 C0 48 C7 05");
-	if (0 == instructionAddr) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));	
-		return;
-	}
-
-	uintptr_t _SchemaSystemInterface = instructionAddr + *(int32_t*)(instructionAddr + 3) + 7;
-	SDK::CSchemaSystem* schemaSystem = (SDK::CSchemaSystem*)(_SchemaSystemInterface);
-
-	if (!schemaSystem)
-	{
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return;
-	}
+	if (!schemaSystem) return;
 
 	getOffsetsFromSchemaSystem(schemaSystem);
 

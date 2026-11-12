@@ -4,6 +4,7 @@
 #include "DeathMsg.h"
 #include "WrpConsole.h"
 #include "Globals.h"
+#include "addresses.h"
 
 #include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
 
@@ -44,10 +45,10 @@ const char * CEntityInstance::GetName() {
             *puVar4 = "GetName";
             ...
             puVar4[8] = FUN_18094f290; // <-  VSCRIPT entity.GetName function.
-            ...            
-        }        
+            ...
+        }
     */
-	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + g_clientDllOffsets.CEntityInstance.m_pEntity) + AFXADDR_GET(cs2_client_CEntityIdentity_m_name_offset));
 	if(pszName) return pszName;
 	return "";
 }
@@ -67,9 +68,10 @@ const char * CEntityInstance::GetDebugName() {
             ...            
         }        
     */    
-	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x18);
+	unsigned char * pEntityIdentity = *(unsigned char**)((unsigned char*)this + g_clientDllOffsets.CEntityInstance.m_pEntity);
+	const char * pszName = (const char*)*(unsigned char**)(pEntityIdentity + AFXADDR_GET(cs2_client_CEntityIdentity_m_name_offset));
 	if(pszName) return pszName;
-	return **(const char***)(*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x8)+0x58);
+	return **(const char***)(*(unsigned char**)(pEntityIdentity + AFXADDR_GET(cs2_client_CEntityIdentity_m_pClassInfo_offset)) + AFXADDR_GET(cs2_client_CEntityClass_ppszClassName_offset));
 }
 
 // Retrieved from script function.
@@ -84,7 +86,7 @@ const char * CEntityInstance::GetClassName() {
             ...            
         }        
     */     
-	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + 0x10) + 0x20);
+	const char * pszName = (const char*)*(unsigned char**)(*(unsigned char**)((unsigned char*)this + g_clientDllOffsets.CEntityInstance.m_pEntity) + AFXADDR_GET(cs2_client_CEntityIdentity_m_designerName_offset));
 	if(pszName) return pszName;
 	return "";
 }
@@ -93,13 +95,10 @@ extern HMODULE g_H_ClientDll;
 
 // Retrieved from script function.
 const char * CEntityInstance::GetClientClassName() {
-    // GetClientClass function.
-    // find it by searching for 4th full-ptr ref to "C_PlantedC4" subtract sizeof(void*) (0x8) and search function that references this struct.
-    // you need to search for raw bytes, GiHidra doesn't seem to find the reference.
-    void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[49]) (this); // was 48 before 2026-09-23 build
+    void * pClientClass = ((void * (__fastcall *)(void *)) (*(void***)this)[AFXADDR_GET(cs2_client_CEntityInstance_GetClientClass_vtable_idx)]) (this);
 
     if(pClientClass) {
-        return *(const char**)((unsigned char*)pClientClass + 0x10);
+        return *(const char**)((unsigned char*)pClientClass + AFXADDR_GET(cs2_client_ClientClass_m_pNetworkName_offset));
     }
     return nullptr;
 }
@@ -108,8 +107,7 @@ const char * CEntityInstance::GetClientClassName() {
 // GetEntityHandle ...
 
 bool CEntityInstance::IsPlayerPawn() {
-	// See cl_ent_text drawing function.
-	return ((bool (__fastcall *)(void *)) (*(void***)this)[158]) (this); // was 155 before 2026-09-23 build
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[AFXADDR_GET(cs2_client_CEntityInstance_IsPlayerPawn_vtable_idx)]) (this);
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
@@ -119,8 +117,7 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerPawnHandle() {
 }
 
 bool CEntityInstance::IsPlayerController() {
-	// See cl_ent_text drawing function. Near "Pawn: (%d) Name: %s".
-	return ((bool (__fastcall *)(void *)) (*(void***)this)[159]) (this); // was 156 before 2026-09-23 build
+	return ((bool (__fastcall *)(void *)) (*(void***)this)[AFXADDR_GET(cs2_client_CEntityInstance_IsPlayerController_vtable_idx)]) (this);
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetPlayerControllerHandle() {
@@ -152,13 +149,11 @@ void CEntityInstance::GetOrigin(float & x, float & y, float & z) {
 }
 
 void CEntityInstance::GetRenderEyeOrigin(float outOrigin[3]) {
-	// GetRenderEyeAngles vtable offset minus 1
-	((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[173]) (this,outOrigin); // was 170 before 2026-09-23 build
+	((void (__fastcall *)(void *,float outOrigin[3])) (*(void***)this)[AFXADDR_GET(cs2_client_CEntityInstance_GetRenderEyeOrigin_vtable_idx)]) (this,outOrigin);
 }
 
 void CEntityInstance::GetRenderEyeAngles(float outAngles[3]) {
-	// See cl_track_render_eye_angles. Near "Render eye angles: %.7f, %.7f, %.7f\n".
-	((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[174]) (this,outAngles); // was 171 before 2026-09-23 build
+	((void (__fastcall *)(void *,float outAngles[3])) (*(void***)this)[AFXADDR_GET(cs2_client_CEntityInstance_GetRenderEyeAngles_vtable_idx)]) (this,outAngles);
 }
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetViewEntityHandle() {
@@ -207,7 +202,7 @@ SOURCESDK::CS2::CBaseHandle CEntityInstance::GetObserverTarget() {
 
 SOURCESDK::CS2::CBaseHandle CEntityInstance::GetHandle() {
 	if (auto pEntityIdentity = *(u_char**)((u_char*)this + g_clientDllOffsets.CEntityInstance.m_pEntity)) {
-		return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(uint32_t*)(pEntityIdentity + 0x10));
+		return SOURCESDK::CS2::CEntityHandle::CEntityHandle(*(uint32_t*)(pEntityIdentity + AFXADDR_GET(cs2_client_CEntityIdentity_m_EHandle_offset)));
 	}
 
 	return SOURCESDK::CS2::CEntityHandle::CEntityHandle();
@@ -405,10 +400,9 @@ bool Hook_ClientEntitySystem2() {
     static bool firstRun = true;
 
     if(g_pEntityList && *g_pEntityList) {
-        // https://github.com/bruhmoment21/cs2-sdk
         void ** vtable = **(void****)g_pEntityList;
-        g_Org_OnAddEntity = (OnAddEntity_t)vtable[15];
-        g_Org_OnRemoveEntity = (OnRemoveEntity_t)vtable[16];
+        g_Org_OnAddEntity = (OnAddEntity_t)vtable[AFXADDR_GET(cs2_client_CGameEntitySystem_OnAddEntity_vtable_idx)];
+        g_Org_OnRemoveEntity = (OnRemoveEntity_t)vtable[AFXADDR_GET(cs2_client_CGameEntitySystem_OnRemoveEntity_vtable_idx)];
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         DetourAttach(&(PVOID&)g_Org_OnAddEntity, New_OnAddEntity);
@@ -420,47 +414,10 @@ bool Hook_ClientEntitySystem2() {
 }
 
 void Hook_ClientEntitySystem3(HMODULE clientDll) {
-	// these two called one after each other
-	// there is only one placed where they are called together
-	//
-	//                             LAB_1802066cd                                   XREF[1]:     18020660b (j)   
-    // 1802066cd 8b  4f  6c       MOV        ECX ,dword ptr [RDI  + 0x6c ]
-    // 1802066d0 83  e9  01       SUB        ECX ,0x1
-    // 1802066d3 0f  84  3d       JZ         LAB_180206816
-    //           01  00  00
-    // 1802066d9 83  f9  01       CMP        ECX ,0x1
-    // 1802066dc 75  4c           JNZ        LAB_18020672a
-    // 1802066de 4c  8b  47  30    MOV        R8,qword ptr [RDI  + 0x30 ]
-    // 1802066e2 48  8d  95       LEA        RDX =>Stack [0x28 ],[RBP  + 0xc0 ]
-    //           c0  00  00  00
-    // 1802066e9 48  8b  ce       MOV        RCX ,RSI
-    // 1802066ec e8  9f  bf       CALL       FUN_1808c2690                                    undefined FUN_1808c2690()
-    //           6b  00
-    // 1802066f1 0f  b6  95       MOVZX      EDX ,byte ptr [RBP  + Stack [0x28 ]]
-    //           c0  00  00  00
-    // 1802066f8 84  d2           TEST       DL,DL
-    // 1802066fa 74  29           JZ         LAB_180206725
-    // 1802066fc 4c  8d  45  b0    LEA        R8=>local_e8 ,[RBP  + -0x50 ]
-    // 180206700 48  8b  ce       MOV        RCX ,RSI
-    // 180206703 e8  78  ca       CALL       FUN_1808b3180                                    undefined FUN_1808b3180()
-	//
-	// to find this place find function with 5 arguments near "Unable to create non-precached breakable%s\n"
-	// then in that function find place like this
-	//
-	//   else if (((*(int *)((longlong)param_4 + 0x6c) == 2) &&
-    //          (FUN_1808c2690(param_3,&param_5,param_4[6]), (char)param_5 != '\0')) &&
-    //         (FUN_1808b3180(param_3,(char)param_5,&local_e8), cVar2 != '\0')) {
-    //   FUN_1815f22b0(param_2,(char)param_5,local_158,&local_108);
-    // }
-	//
-	// first function can be found near "attachment_point" or called with "muzzle_flash" as last arg
-	// second function in some places can be found with offset to m_nAttachmentIndex of CEffectData as 2nd arg
-
-	// Since 2026-09-23 the je between the calls is near (0F 84 rel32) instead of short, so the second call is at +27.
-	if (auto startAddr = getAddress(clientDll, "E8 ?? ?? ?? ?? 0F B6 95 ?? ?? ?? ?? 84 D2 0F 84 ?? ?? ?? ?? 4C 8D 45 B0 48 8B CE E8 ?? ?? ?? ??")) {
-		org_LookupAttachment = (org_LookupAttachment_t)(startAddr + 5 + *(int32_t*)(startAddr + 1));
-		org_GetAttachment = (org_GetAttachment_t)(startAddr + 27 + 5 + *(int32_t*)(startAddr + 27 + 1));
-	} else ErrorBox(MkErrStr(__FILE__, __LINE__));
+	if (AFXADDR_GET(cs2_client_LookupAttachment) && AFXADDR_GET(cs2_client_GetAttachment)) {
+		org_LookupAttachment = (org_LookupAttachment_t)AFXADDR_GET(cs2_client_LookupAttachment);
+		org_GetAttachment = (org_GetAttachment_t)AFXADDR_GET(cs2_client_GetAttachment);
+	}
 }
 
 int GetHighestEntityIndex() {
