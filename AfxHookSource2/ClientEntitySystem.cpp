@@ -470,7 +470,7 @@ int GetHighestEntityIndex() {
 
 struct MirvEntityEntry {
 	int entryIndex;
-	int handle;
+	unsigned int handle;
 	std::string debugName;
 	std::string className;
 	std::string clientClassName;
@@ -557,7 +557,7 @@ CON_COMMAND(mirv_listentities, "List entities.")
 	if (printCount == -1) printCount = entries.size();
 	for (int i = 0; i < printCount; i++) {
 		auto e = entries[i];
-		advancedfx::Message("%i / %i / %s / %s / %s / [ %f , %f , %f , %f , %f , %f ]\n"
+		advancedfx::Message("%i / %u / %s / %s / %s / [ %f , %f , %f , %f , %f , %f ]\n"
 			, e.entryIndex, e.handle
 			, e.debugName.c_str(), e.className.c_str(), e.clientClassName.c_str()
 			, e.origin.x, e.origin.y, e.origin.z 
@@ -625,7 +625,7 @@ extern "C" FFIBool afx_hook_source2_get_entity_ref_is_player_pawn(void * pRef) {
     return FFIBOOL_FALSE;
 }
 
-extern "C" int afx_hook_source2_get_entity_ref_player_pawn_handle(void * pRef) {
+extern "C" unsigned int afx_hook_source2_get_entity_ref_player_pawn_handle(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->GetPlayerPawnHandle().ToInt();
     }
@@ -639,7 +639,7 @@ extern "C" FFIBool afx_hook_source2_get_entity_ref_is_player_controller(void * p
     return FFIBOOL_FALSE;    
 }
 
-extern "C" int afx_hook_source2_get_entity_ref_player_controller_handle(void * pRef) {
+extern "C" unsigned int afx_hook_source2_get_entity_ref_player_controller_handle(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
         return pInstance->GetPlayerControllerHandle().ToInt();
     }
@@ -687,14 +687,14 @@ extern "C" void afx_hook_source2_get_entity_ref_render_eye_angles(void * pRef, f
     }    
 }
 
-extern "C" int afx_hook_source2_get_entity_ref_view_entity_handle(void * pRef) {
+extern "C" unsigned int afx_hook_source2_get_entity_ref_view_entity_handle(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
        return pInstance->GetViewEntityHandle().ToInt();
     }
     return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
 }
 
-extern "C" int afx_hook_source2_get_entity_ref_active_weapon_handle(void * pRef) {
+extern "C" unsigned int afx_hook_source2_get_entity_ref_active_weapon_handle(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
        return pInstance->GetActiveWeaponHandle().ToInt();
     }
@@ -746,21 +746,21 @@ extern "C" uint8_t afx_hook_source2_get_entity_ref_observer_mode(void * pRef) {
     return 0;
 }
 
-extern "C" int afx_hook_source2_get_entity_ref_observer_target_handle(void * pRef) {
+extern "C" unsigned int afx_hook_source2_get_entity_ref_observer_target_handle(void * pRef) {
     if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
        return pInstance->GetObserverTarget().ToInt();
     }
     return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
 }
 
-extern "C" int afx_hook_source2_get_entity_ref_parent_handle(void * pRef) {
+extern "C" unsigned int afx_hook_source2_get_entity_ref_parent_handle(void * pRef) {
 	if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
 		return pInstance->GetParentHandle().ToInt();
 	}
 	return SOURCESDK_CS2_INVALID_EHANDLE_INDEX;
 }
 
-extern "C" int afx_hook_source2_get_entity_ref_root_handle(void * pRef) {
+extern "C" unsigned int afx_hook_source2_get_entity_ref_root_handle(void * pRef) {
 	if(auto pInstance = ((CAfxEntityInstanceRef *)pRef)->GetInstance()) {
 		return pInstance->GetRootHandle().ToInt();
 	}
