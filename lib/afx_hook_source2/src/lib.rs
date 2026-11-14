@@ -103,10 +103,10 @@ unsafe extern "C" {
     fn afx_hook_source2_enable_on_c_view_render_setup_view(value: bool);
     fn afx_hook_source2_enable_on_client_frame_stage_notify(value: bool);
 
-    fn afx_hook_source2_make_handle(entry_index: i32, serial_number: i32) -> i32;
-    fn afx_hook_source2_is_handle_valid(handle: i32) -> bool;
-    fn afx_hook_source2_get_handle_entry_index(handle: i32) -> i32;
-    fn afx_hook_source2_get_handle_serial_number(handle: i32) -> i32;
+    fn afx_hook_source2_make_handle(entry_index: i32, serial_number: i32) -> u32;
+    fn afx_hook_source2_is_handle_valid(handle: u32) -> bool;
+    fn afx_hook_source2_get_handle_entry_index(handle: u32) -> i32;
+    fn afx_hook_source2_get_handle_serial_number(handle: u32) -> i32;
 
     fn afx_hook_source2_get_highest_entity_index() -> i32;
 
@@ -131,11 +131,11 @@ unsafe extern "C" {
 
     fn afx_hook_source2_get_entity_ref_is_player_pawn(p_ref: * mut AfxEntityRef) -> bool;
 
-    fn afx_hook_source2_get_entity_ref_player_pawn_handle(p_ref: * mut AfxEntityRef) -> i32;
+    fn afx_hook_source2_get_entity_ref_player_pawn_handle(p_ref: * mut AfxEntityRef) -> u32;
 
     fn afx_hook_source2_get_entity_ref_is_player_controller(p_ref: * mut AfxEntityRef) -> bool;
 
-    fn afx_hook_source2_get_entity_ref_player_controller_handle(p_ref: * mut AfxEntityRef) -> i32;
+    fn afx_hook_source2_get_entity_ref_player_controller_handle(p_ref: * mut AfxEntityRef) -> u32;
 
     fn afx_hook_source2_get_entity_ref_health(p_ref: * mut AfxEntityRef) -> i32;
 
@@ -147,17 +147,17 @@ unsafe extern "C" {
 
     fn afx_hook_source2_get_entity_ref_render_eye_angles(p_ref: * mut AfxEntityRef, x: & mut f32, y: & mut f32, z: & mut f32);
 
-    fn afx_hook_source2_get_entity_ref_view_entity_handle(p_ref: * mut AfxEntityRef) -> i32;
+    fn afx_hook_source2_get_entity_ref_view_entity_handle(p_ref: * mut AfxEntityRef) -> u32;
 
-    fn afx_hook_source2_get_entity_ref_active_weapon_handle(p_ref: * mut AfxEntityRef) -> i32;
+    fn afx_hook_source2_get_entity_ref_active_weapon_handle(p_ref: * mut AfxEntityRef) -> u32;
 
     fn afx_hook_source2_get_entity_ref_observer_mode(p_ref: * mut AfxEntityRef) -> u8;
 
-    fn afx_hook_source2_get_entity_ref_observer_target_handle(p_ref: * mut AfxEntityRef) -> i32;
+    fn afx_hook_source2_get_entity_ref_observer_target_handle(p_ref: * mut AfxEntityRef) -> u32;
 
-    fn afx_hook_source2_get_entity_ref_parent_handle(p_ref: * mut AfxEntityRef) -> i32;
+    fn afx_hook_source2_get_entity_ref_parent_handle(p_ref: * mut AfxEntityRef) -> u32;
 
-    fn afx_hook_source2_get_entity_ref_root_handle(p_ref: * mut AfxEntityRef) -> i32;
+    fn afx_hook_source2_get_entity_ref_root_handle(p_ref: * mut AfxEntityRef) -> u32;
 
     fn afx_hook_source2_is_playing_demo() -> bool;
 
@@ -1115,15 +1115,15 @@ fn afx_enable_on_client_frame_stage_notify(value: bool) {
     }
 }
 
-fn afx_make_handle(entry_index: i32, serial_number: i32) -> i32 {
-    let result: i32;
+fn afx_make_handle(entry_index: i32, serial_number: i32) -> u32 {
+    let result: u32;
     unsafe {
         result = afx_hook_source2_make_handle(entry_index, serial_number);
     }
     return result;
 }
 
-fn afx_is_handle_valid(handle: i32) -> bool {
+fn afx_is_handle_valid(handle: u32) -> bool {
     let result: bool;
     unsafe {
         result = afx_hook_source2_is_handle_valid(handle);
@@ -1131,7 +1131,7 @@ fn afx_is_handle_valid(handle: i32) -> bool {
     return result;
 }
 
-fn afx_get_handle_entry_index(handle: i32) -> i32 {
+fn afx_get_handle_entry_index(handle: u32) -> i32 {
     let result: i32;
     unsafe {
         result = afx_hook_source2_get_handle_entry_index(handle);
@@ -1139,7 +1139,7 @@ fn afx_get_handle_entry_index(handle: i32) -> i32 {
     return result;
 }
 
-fn afx_get_handle_serial_number(handle: i32) -> i32 {
+fn afx_get_handle_serial_number(handle: u32) -> i32 {
     let result: i32;
     unsafe {
         result = afx_hook_source2_get_handle_serial_number(handle);
@@ -1290,8 +1290,8 @@ fn afx_get_entity_ref_is_player_pawn(p_ref: * mut AfxEntityRef) -> bool {
     return result;
 }
 
-fn afx_get_entity_ref_player_pawn_handle(p_ref: * mut AfxEntityRef) -> i32 {
-    let result: i32;
+fn afx_get_entity_ref_player_pawn_handle(p_ref: * mut AfxEntityRef) -> u32 {
+    let result: u32;
     unsafe {
         result = afx_hook_source2_get_entity_ref_player_pawn_handle(p_ref);
     }
@@ -1307,8 +1307,8 @@ fn afx_get_entity_ref_is_player_controller(p_ref: * mut AfxEntityRef) -> bool {
     return result;
 }
 
-fn afx_get_entity_ref_player_controller_handle(p_ref: * mut AfxEntityRef) -> i32 {
-    let result: i32;
+fn afx_get_entity_ref_player_controller_handle(p_ref: * mut AfxEntityRef) -> u32 {
+    let result: u32;
     unsafe {
         result = afx_hook_source2_get_entity_ref_player_controller_handle(p_ref);
     }
@@ -1350,16 +1350,16 @@ fn afx_get_entity_ref_render_eye_angles(p_ref: * mut AfxEntityRef, x: & mut f32,
     }
 }
 
-fn afx_get_entity_ref_view_entity_handle(p_ref: * mut AfxEntityRef) -> i32 {
-    let result: i32;
+fn afx_get_entity_ref_view_entity_handle(p_ref: * mut AfxEntityRef) -> u32 {
+    let result: u32;
     unsafe {
         result = afx_hook_source2_get_entity_ref_view_entity_handle(p_ref);
     }
     return result;
 }
 
-fn afx_get_entity_ref_active_weapon_handle(p_ref: * mut AfxEntityRef) -> i32 {
-    let result: i32;
+fn afx_get_entity_ref_active_weapon_handle(p_ref: * mut AfxEntityRef) -> u32 {
+    let result: u32;
     unsafe {
         result = afx_hook_source2_get_entity_ref_active_weapon_handle(p_ref);
     }
@@ -1376,24 +1376,24 @@ fn afx_get_entity_ref_observer_mode(p_ref: * mut AfxEntityRef) -> u8 {
 }
 
 
-fn afx_get_entity_ref_observer_target_handle(p_ref: * mut AfxEntityRef) -> i32 {
-    let result: i32;
+fn afx_get_entity_ref_observer_target_handle(p_ref: * mut AfxEntityRef) -> u32 {
+    let result: u32;
     unsafe {
         result = afx_hook_source2_get_entity_ref_observer_target_handle(p_ref);
     }
     return result;
 }
 
-fn afx_get_entity_ref_parent_handle(p_ref: * mut AfxEntityRef) -> i32 {
-    let result: i32;
+fn afx_get_entity_ref_parent_handle(p_ref: * mut AfxEntityRef) -> u32 {
+    let result: u32;
     unsafe {
         result = afx_hook_source2_get_entity_ref_parent_handle(p_ref);
     }
     return result;
 }
 
-fn afx_get_entity_ref_root_handle(p_ref: * mut AfxEntityRef) -> i32 {
-    let result: i32;
+fn afx_get_entity_ref_root_handle(p_ref: * mut AfxEntityRef) -> u32 {
+    let result: u32;
     unsafe {
         result = afx_hook_source2_get_entity_ref_root_handle(p_ref);
     }
@@ -2394,7 +2394,7 @@ fn mirv_make_handle(_this: &JsValue, args: &[JsValue], context: &mut Context) ->
 
 fn mirv_is_handle_valid(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if args.len() == 1 {
-        if let Ok(handle) = args[0].to_i32(context) {
+        if let Ok(handle) = args[0].to_u32(context) {
             return Ok(js_value!(afx_is_handle_valid(handle)));
         }
     }
@@ -2403,7 +2403,7 @@ fn mirv_is_handle_valid(_this: &JsValue, args: &[JsValue], context: &mut Context
 
 fn mirv_get_handle_entry_index(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if args.len() == 1 {
-        if let Ok(handle) = args[0].to_i32(context) {
+        if let Ok(handle) = args[0].to_u32(context) {
             return Ok(js_value!(afx_get_handle_entry_index(handle)));
         }
     }
@@ -2412,7 +2412,7 @@ fn mirv_get_handle_entry_index(_this: &JsValue, args: &[JsValue], context: &mut 
 
 fn mirv_get_handle_serial_number(_this: &JsValue, args: &[JsValue], context: &mut Context) -> JsResult<JsValue> {
     if args.len() == 1 {
-        if let Ok(handle) = args[0].to_i32(context) {
+        if let Ok(handle) = args[0].to_u32(context) {
             return Ok(js_value!(afx_get_handle_serial_number(handle)));
         }
     }
@@ -3713,7 +3713,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_client_frame_stage_notify<'a>(th
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn afx_hook_source2_rs_on_add_entity<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, p_ref: * mut AfxEntityRef, handle: i32) {
+pub unsafe extern "C" fn afx_hook_source2_rs_on_add_entity<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, p_ref: * mut AfxEntityRef, handle: u32) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
 
     afx_add_ref_entity_ref(p_ref);
@@ -3733,7 +3733,7 @@ pub unsafe extern "C" fn afx_hook_source2_rs_on_add_entity<'a>(this_ptr: *mut Af
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn afx_hook_source2_rs_on_remove_entity<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, p_ref: * mut AfxEntityRef, handle: i32) {
+pub unsafe extern "C" fn afx_hook_source2_rs_on_remove_entity<'a>(this_ptr: *mut AfxHookSource2Rs<'a>, p_ref: * mut AfxEntityRef, handle: u32) {
     let context = (*afx_hooks_source_2_rs_ptr_to_ref(this_ptr).context).get();
 
     afx_add_ref_entity_ref(p_ref);

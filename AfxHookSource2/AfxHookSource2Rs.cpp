@@ -66,19 +66,19 @@ extern "C" void afx_hook_source2_enable_on_client_frame_stage_notify(FFIBool val
     g_b_on_client_frame_stage_notify = FFIBOOL_TO_BOOL(value);
 }
 
-extern "C" int afx_hook_source2_make_handle(int entryIndex, int serialNumber) {
+extern "C" unsigned int afx_hook_source2_make_handle(int entryIndex, int serialNumber) {
     return SOURCESDK::CS2::CEntityHandle(entryIndex, serialNumber).ToInt();
 }
 
-extern "C" FFIBool afx_hook_source2_is_handle_valid(int handle) {
+extern "C" FFIBool afx_hook_source2_is_handle_valid(unsigned int handle) {
     return BOOL_TO_FFIBOOL(SOURCESDK::CS2::CEntityHandle(handle).IsValid());
 }
 
-extern "C" int afx_hook_source2_get_handle_entry_index(int handle) {
+extern "C" int afx_hook_source2_get_handle_entry_index(unsigned int handle) {
     return SOURCESDK::CS2::CEntityHandle(handle).GetEntryIndex();
 }
 
-extern "C" int afx_hook_source2_get_handle_serial_number(int handle) {
+extern "C" int afx_hook_source2_get_handle_serial_number(unsigned int handle) {
     return SOURCESDK::CS2::CEntityHandle(handle).GetSerialNumber();
 }
 
@@ -204,9 +204,9 @@ extern "C" FFIBool afx_hook_source2_rs_on_c_view_render_setup_view(AfxHookSource
 
 extern "C" void afx_hook_source2_rs_on_client_frame_stage_notify(AfxHookSource2Rs * this_ptr, int event_id, FFIBool is_before);
 
-extern "C" void afx_hook_source2_rs_on_add_entity(AfxHookSource2Rs * this_ptr, void * p_ref, int handle);
+extern "C" void afx_hook_source2_rs_on_add_entity(AfxHookSource2Rs * this_ptr, void * p_ref, unsigned int handle);
 
-extern "C" void afx_hook_source2_rs_on_remove_entity(AfxHookSource2Rs * this_ptr, void * p_ref, int handle);
+extern "C" void afx_hook_source2_rs_on_remove_entity(AfxHookSource2Rs * this_ptr, void * p_ref, unsigned int handle);
 
 extern "C" FFIBool afx_hook_source2_get_demo_tick(int& outTick) {
 	return BOOL_TO_FFIBOOL(g_MirvTime.GetCurrentDemoTick(outTick));
@@ -282,13 +282,13 @@ void AfxHookSource2Rs_Engine_OnClientFrameStageNotify(int event_id, bool is_befo
     }
 }
 
-void AfxHookSource2Rs_Engine_OnAddEntity(void * pEntityRef, int handle) {
+void AfxHookSource2Rs_Engine_OnAddEntity(void * pEntityRef, unsigned int handle) {
     if(nullptr != g_AfxHookSource2Rs_Engine) {
         afx_hook_source2_rs_on_add_entity(g_AfxHookSource2Rs_Engine, pEntityRef, handle);
     }
 }
 
-void AfxHookSource2Rs_Engine_OnRemoveEntity(void * pEntityRef, int handle) {
+void AfxHookSource2Rs_Engine_OnRemoveEntity(void * pEntityRef, unsigned int handle) {
     if(nullptr != g_AfxHookSource2Rs_Engine) {
         afx_hook_source2_rs_on_remove_entity(g_AfxHookSource2Rs_Engine, pEntityRef, handle);
     }
