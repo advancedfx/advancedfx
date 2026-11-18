@@ -14,6 +14,7 @@ use boa_engine::JsVariant;
 use boa_engine::Trace;
 use boa_engine::class::Class;
 use boa_engine::class::ClassBuilder;
+use boa_engine::job::GenericJob;
 use boa_engine::js_string;
 use boa_engine::js_value;
 use boa_engine::object::ObjectInitializer;
@@ -375,13 +376,15 @@ impl CampathChangedCallback {
 impl advancedfx::campath::CampathChangedObserver for CampathChangedCallback {
     fn notify(&mut self) {
         let context = (*self.context).get();
-
-        let _ = EventSource::obj_dispatch(
-            &self.event_source,
-            context,
-            JsValue::undefined(),
-            HashMap::from([])
+        let event_source = self.event_source.clone();
+        let job = GenericJob::new(
+            move |context| {
+                let _ = EventSource::obj_dispatch(&event_source, context, JsValue::undefined(), HashMap::new());
+                Ok(JsValue::undefined())
+            },
+            context.realm().clone(),
         );
+        context.enqueue_job(job.into());
     }
 }
 
