@@ -24,6 +24,14 @@ typedef size_t AfxAddr;
 	AfxAddr g_AfxAddr_##name; \
 	_AfxAddrInfo _g_AfxAddrInfo##name (&g_AfxAddr_##name, #name);
 
+// Value for offsets and vtable indices that are not set (0 is a valid value for those):
+#define AFXADDR_INVALID ((AfxAddr)-1)
+
+// address definition macro (.cpp) for offsets and vtable indices, initialized to AFXADDR_INVALID:
+#define AFXADDR_DEF_INVALID(name) \
+	AfxAddr g_AfxAddr_##name = AFXADDR_INVALID; \
+	_AfxAddrInfo _g_AfxAddrInfo##name (&g_AfxAddr_##name, #name);
+
 //
 // Run-time access functions:
 

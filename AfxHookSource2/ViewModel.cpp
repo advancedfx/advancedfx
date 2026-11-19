@@ -1,5 +1,6 @@
 #include "ViewModel.h"
 #include "Globals.h"
+#include "addresses.h"
 
 #include <cstddef>
 #include "../deps/release/Detours/src/detours.h"
@@ -67,24 +68,10 @@ void HookViewmodel(HMODULE clientDll)
 {
 	if (g_MirvViewmodel.hooked) return;
 
-	// This function references the cvars viewmodel_offset_x, viewmodel_offset_y, viewmodel_offset_z, viewmodel_offset_fov (usually 3rd reference).
-	// can be also found with 00 00 88 42 (68.0 in float), which is max limit for fov
-	// there are 2 similiar functions, make sure to test if it breakes again to not confuse them
-	size_t viewmodelAddr = getAddress(clientDll, "40 55 53 56 41 56 41 57 48 8B EC 48 83 EC 20 4D 8B F8 4C 8B F2 48 8B F1"); 
-	if (0 == viewmodelAddr) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));	//TODO
-		return;
-	}
-	// vtable byte offset 0xac8 for "C_CSGO_TeamPreviewModel" class (4th from end.).
-	// This function is called right after the first call to viewmodelAddr function.
-	size_t handAddr = getAddress(clientDll, "40 53 48 83 EC ?? 80 B9 ?? ?? ?? ?? ?? 48 8B D9 0F 84 ?? ?? ?? ?? 48 8B 89 ?? ?? ?? ?? 48 85 C9 75");
-	if (0 == handAddr) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));	
-		return;
-	}
+	if (0 == AFXADDR_GET(cs2_client_ViewmodelFunc) || 0 == AFXADDR_GET(cs2_client_ViewmodelHandFunc)) return;
 
-    g_OriginalViewmodelFunc = (g_OriginalViewmodelFunc_t)(viewmodelAddr);
-	g_OriginalHandFunc = (g_OriginalHandFunc_t)(handAddr);
+    g_OriginalViewmodelFunc = (g_OriginalViewmodelFunc_t)AFXADDR_GET(cs2_client_ViewmodelFunc);
+	g_OriginalHandFunc = (g_OriginalHandFunc_t)AFXADDR_GET(cs2_client_ViewmodelHandFunc);
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());

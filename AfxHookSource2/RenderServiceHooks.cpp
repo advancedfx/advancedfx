@@ -49,7 +49,7 @@ FrameUpdate_t g_Old_FrameUpdate = nullptr;
 
 void __fastcall My_Engine2_RenderService_OnClientOutput(void * pUnk0, void * pUnk1) {
 
-    bool bHooksAvailable = g_pSceneSystem && g_Old_FrameUpdate && g_Old_SceneSystem_WaitForRenderingToComplete && AFXADDR_GET(cs2_SceneSystem_FrameUpdate_vtable_idx);
+    bool bHooksAvailable = g_pSceneSystem && g_Old_FrameUpdate && g_Old_SceneSystem_WaitForRenderingToComplete;
     if(!bHooksAvailable) {
         g_bHad_ClientOutput = false;
         g_Engine2_RenderService_OnClientOutput(pUnk0,pUnk1);
@@ -118,11 +118,11 @@ bool Hook_SceneSystem_WaitForRenderingToComplete(void * g_pSceneSystem) {
     if(bFirstRun) {
         bFirstRun = false;
 
-        if(g_pSceneSystem && AFXADDR_GET(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx) && AFXADDR_GET(cs2_SceneSystem_FrameUpdate_vtable_idx)) {
+        if(g_pSceneSystem && AFXADDR_INVALID != AFXADDR_GET(cs2_scenesystem_CSceneSystem_WaitForRenderingToComplete_vtable_idx) && AFXADDR_INVALID != AFXADDR_GET(cs2_scenesystem_CSceneSystem_FrameUpdate_vtable_idx)) {
             void ** vtable = *(void***)g_pSceneSystem;
 
-            g_Old_FrameUpdate = (FrameUpdate_t)(vtable[AFXADDR_GET(cs2_SceneSystem_FrameUpdate_vtable_idx)]);
-            g_Old_SceneSystem_WaitForRenderingToComplete = (SceneSystem_WaitForRenderingToComplete_t)(vtable[AFXADDR_GET(cs2_SceneSystem_WaitForRenderingToComplete_vtable_idx)]);
+            g_Old_FrameUpdate = (FrameUpdate_t)(vtable[AFXADDR_GET(cs2_scenesystem_CSceneSystem_FrameUpdate_vtable_idx)]);
+            g_Old_SceneSystem_WaitForRenderingToComplete = (SceneSystem_WaitForRenderingToComplete_t)(vtable[AFXADDR_GET(cs2_scenesystem_CSceneSystem_WaitForRenderingToComplete_vtable_idx)]);
 
     		DetourTransactionBegin();
 	    	DetourUpdateThread(GetCurrentThread());

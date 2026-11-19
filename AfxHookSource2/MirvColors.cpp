@@ -3,6 +3,7 @@
 #include "SchemaSystem.h"
 #include "MirvTime.h"
 #include "MirvCommands.h"
+#include "addresses.h"
 #include "../shared/StringTools.h"
 
 bool g_bHookedMirvColors = false;
@@ -224,39 +225,31 @@ void __fastcall new_setSmokeProps(CEntityInstance* param_1) {
 	g_Original_setSmokeProps(param_1);
 }
 
-// both 0x100 and 0x108 are called with this value in g_Original_renderSmokes
-const uint32_t g_SmokeCbSize = 0x9c0;
-
 thread_local bool g_bInSmokeRender = false;
 thread_local void* g_SmokeCbHandle = nullptr;
 thread_local void* g_SmokeCbData = nullptr;
 
+// See cs2_client_SmokeConstantBuffer_* in addresses.cpp.
+
 void MirvColors_OnLockDynamicConstantBuffer(void *handle, void **data, uint32_t size) {
-	if (!g_bInSmokeRender || size != g_SmokeCbSize || handle == nullptr || data == nullptr) return;
+	if (!g_bInSmokeRender || size != AFXADDR_GET(cs2_client_SmokeConstantBuffer_size) || handle == nullptr || data == nullptr) return;
 	g_SmokeCbHandle = handle;
 	g_SmokeCbData = *data;
 }
 
 void MirvColors_OnUnlockDynamicConstantBuffer(void *handle, uint32_t size) {
-	if (!g_bInSmokeRender || size != g_SmokeCbSize || handle == nullptr || handle != g_SmokeCbHandle) return;
+	if (!g_bInSmokeRender || size != AFXADDR_GET(cs2_client_SmokeConstantBuffer_size) || handle == nullptr || handle != g_SmokeCbHandle) return;
 
 	u_char* cb = (u_char*)g_SmokeCbData;
 	g_SmokeCbHandle = nullptr;
 	g_SmokeCbData = nullptr;
 
-	// See g_Original_renderSmokes
-	// *(uint *)(uVar19 + 0x9b0) = uVar20;
-	// before calling 0x108 fn
-	int count = *(int*)(cb + 0x9b0);
+	int count = *(int*)(cb + AFXADDR_GET(cs2_client_SmokeConstantBuffer_count_offset));
 	// See near "Unable to render more than %d smokes.\n"
 	if (count < 0 || count > 0x10) count = 0;
 
 	for (int i = 0; i < count; i++) {
-		*(float*)(cb + 0x508 + i * 0x10) = 0.0f;
-		// in the middle of loop
-		// *(float *)(uVar22 + 0x504 + uVar19) = (3.0 - (fVar35 + fVar35)) * fVar35 * fVar35;
-		// *(float *)(uVar22 + 0x508 + uVar19) = (3.0 - (fVar26 + fVar26)) * fVar26 * fVar26;
-		// *(float *)(uVar22 + 0x50c + uVar19) = (3.0 - (fVar36 + fVar36)) * fVar36 * fVar36;
+		*(float*)(cb + AFXADDR_GET(cs2_client_SmokeConstantBuffer_perSmokeValue_offset) + i * 0x10) = 0.0f;
 	}
 }
 
@@ -345,63 +338,23 @@ void __fastcall new_drawStuff(CEntityInstance* param_1, char param_2) {
 	} 
 }
 
-bool getAddresses(HMODULE clientDll) {
-	// called with offset to m_Glow of C_BaseModelEntity as first argument
-	// Since 2026-09-23 the color is compared as one dword (cmp [rcx], edx) instead of 4 byte compares.
-	size_t g_Original_setGlowColor_addr = getAddress(clientDll, "40 53 48 83 EC 20 48 8B D9 48 83 C1 40 39 11 74 02 89 11 E8 ?? ?? ?? ?? 48 8B 4B 18 48 85 C9");
-	if(g_Original_setGlowColor_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
+bool getAddresses() {
+	if (0 == AFXADDR_GET(cs2_client_CGlowProperty_SetGlowColor)
+		|| 0 == AFXADDR_GET(cs2_client_ApplySmokeProps)
+		|| 0 == AFXADDR_GET(cs2_client_RenderSmokes)
+		|| 0 == AFXADDR_GET(cs2_client_GetParticleManager)
+		|| 0 == AFXADDR_GET(cs2_client_DrawStuff)
+		|| 0 == AFXADDR_GET(cs2_client_CreateParticle)
+		|| 0 == AFXADDR_GET(cs2_client_UpdateParticle))
 		return false;
-	}
 
-	// can be found with offsets to m_vSmokeColor and m_vSmokeDetonationPos
-	size_t g_Original_applySmokeProps_addr = getAddress(clientDll, "40 53 48 83 EC ?? 8B 91 ?? ?? ?? ?? 48 8B D9 85 D2 75");
-	if(g_Original_applySmokeProps_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return false;
-	}
-
-	//   has "SmokeRenderer", "LockDynamicConstantBuffer failed in %s", "Unable to render more than %d smokes.\n"
-	//   see also 1 fn in ".?AVCSmokeVolumeSceneObjectDesc@@" vtable, it's in the last else block
-	size_t g_Original_renderSmokes_addr = getAddress(clientDll, "48 89 54 24 ?? 55 57 41 54 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ??");
-	if(g_Original_renderSmokes_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return false;
-	}
-
-	// can be found close to functions below before calling them
-	size_t g_Original_getParticleManager_addr = getAddress(clientDll, "48 8B 05 ?? ?? ?? ?? C3 CC CC CC CC CC CC CC CC 48 89 5C 24 10 57");
-	if(g_Original_getParticleManager_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return false;
-	}
-
-	// next three functions can be found with "particles/entity/spectator_utility_trail.vpcf" or with offsets to m_nSnapshotTrajectoryEffectIndex, etc.
-	size_t g_Original_drawStuff_addr = getAddress(clientDll, "40 55 53 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 80 B9");
-	if(g_Original_drawStuff_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return false;
-	}
-
-	size_t g_Original_createParticle_addr = getAddress(clientDll, "4C 8B DC 53 48 81 EC ?? ?? ?? ?? F2 0F 10 05");
-	if(g_Original_createParticle_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return false;
-	}
-
-	size_t g_Original_updateParticle_addr = getAddress(clientDll, "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? F3 0F 10 1D ?? ?? ?? ?? 41 8B F8 8B DA 4C 8D 05");
-	if(g_Original_updateParticle_addr == 0) {
-		ErrorBox(MkErrStr(__FILE__, __LINE__));
-		return false;
-	}
-
-	g_Original_setGlowColor = (g_Original_setGlowColor_t)(g_Original_setGlowColor_addr);
-	g_Original_setSmokeProps = (g_Original_setSmokeProps_t)(g_Original_applySmokeProps_addr);
-	g_Original_renderSmokes = (g_Original_renderSmokes_t)(g_Original_renderSmokes_addr);
-	g_Original_getParticleManager = (g_Original_getParticleManager_t)(g_Original_getParticleManager_addr);
-	g_Original_drawStuff = (g_Original_drawStuff_t)(g_Original_drawStuff_addr);
-	g_Original_createParticle = (g_Original_createParticle_t)(g_Original_createParticle_addr);
-	g_Original_updateParticle = (g_Original_updateParticle_t)(g_Original_updateParticle_addr);
+	g_Original_setGlowColor = (g_Original_setGlowColor_t)AFXADDR_GET(cs2_client_CGlowProperty_SetGlowColor);
+	g_Original_setSmokeProps = (g_Original_setSmokeProps_t)AFXADDR_GET(cs2_client_ApplySmokeProps);
+	g_Original_renderSmokes = (g_Original_renderSmokes_t)AFXADDR_GET(cs2_client_RenderSmokes);
+	g_Original_getParticleManager = (g_Original_getParticleManager_t)AFXADDR_GET(cs2_client_GetParticleManager);
+	g_Original_drawStuff = (g_Original_drawStuff_t)AFXADDR_GET(cs2_client_DrawStuff);
+	g_Original_createParticle = (g_Original_createParticle_t)AFXADDR_GET(cs2_client_CreateParticle);
+	g_Original_updateParticle = (g_Original_updateParticle_t)AFXADDR_GET(cs2_client_UpdateParticle);
 
 	return true;
 }
@@ -409,7 +362,7 @@ bool getAddresses(HMODULE clientDll) {
 void HookMirvColors(HMODULE clientDll) {
 	if (g_bHookedMirvColors) return;
 
-	if (!getAddresses(clientDll)) return;
+	if (!getAddresses()) return;
 
 	DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());

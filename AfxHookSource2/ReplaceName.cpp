@@ -5,6 +5,7 @@
 #include "WrpConsole.h"
 #include "Globals.h"
 #include "ClientEntitySystem.h"
+#include "addresses.h"
 
 #include "../shared/binutils.h"
 #include "../shared/StringTools.h"
@@ -96,7 +97,7 @@ void __fastcall New_GetDecoratedPlayerName(void* This, SOURCESDK::CS2::CBufferSt
 
     int userId = -1;
     void ** vtable = *(void ***)This;
-    int * (__fastcall * pfnGetUserId)(void * This, int * pHandle) = (int * (__fastcall *)(void *, int *))(vtable[7]);
+    int * (__fastcall * pfnGetUserId)(void * This, int * pHandle) = (int * (__fastcall *)(void *, int *))(vtable[AFXADDR_GET(cs2_client_GetDecoratedPlayerName_GetUserId_vtable_idx)]);
     pfnGetUserId(This, &userId);
 
     if(g_bDebug_GetDecoratedPlayerName) {
@@ -129,26 +130,21 @@ void HookReplaceName(HMODULE clientDll)
     if(firstRun) {
         firstRun = false;
 
-        // GetDecoratedPlayerName
-        // references "<failure>"        
-		g_Org_GetDecoratedPlayerName = (GetDecoratedPlayerName_t)getAddress(clientDll, "40 55 53 41 54 41 55 41 56 41 57 48 8d ac 24 ?? ?? ?? ?? 48 81 ec ?? ?? ?? ?? 4c 8b ea 4c 8b e1 45 84 c9 75 24 44 8b 4a 04 41 f7 c1 ff ff ff 3f");
-		if (g_Org_GetDecoratedPlayerName != 0) {
+		if (AFXADDR_GET(cs2_client_GetDecoratedPlayerName)) {
+			g_Org_GetDecoratedPlayerName = (GetDecoratedPlayerName_t)AFXADDR_GET(cs2_client_GetDecoratedPlayerName);
 			DetourTransactionBegin();
 			DetourUpdateThread(GetCurrentThread());
 			DetourAttach(&(PVOID&)g_Org_GetDecoratedPlayerName, New_GetDecoratedPlayerName);
 			if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
 		}
-        else ErrorBox(MkErrStr(__FILE__, __LINE__));
 
-        // fn has 3rd reference to string "WWWWWWWWWWWWWWWW"
-        if(void ** vtable = (void **)Afx::BinUtils::FindClassVtable(clientDll, ".?AVCCSPlayerController@@", 0, 0)) {
-            g_Org_CCSPlayerController_GetPlayerName = (CCSPlayerController_GetPlayerName_t)vtable[230]; // was 226 before 2026-09-23 build
+        if(AFXADDR_GET(cs2_client_CCSPlayerController_GetPlayerName)) {
+            g_Org_CCSPlayerController_GetPlayerName = (CCSPlayerController_GetPlayerName_t)AFXADDR_GET(cs2_client_CCSPlayerController_GetPlayerName);
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             DetourAttach(&(PVOID&)g_Org_CCSPlayerController_GetPlayerName, New_CCSPlayerController_GetPlayerName);
             if(NO_ERROR != DetourTransactionCommit()) ErrorBox(MkErrStr(__FILE__, __LINE__));
         }
-        else ErrorBox(MkErrStr(__FILE__, __LINE__));
     }
 }
 

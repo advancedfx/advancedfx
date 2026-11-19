@@ -13,27 +13,6 @@ void ErrorBox() {
 	ErrorBox("Something went wrong.");
 }
 
-size_t getAddress(HMODULE dll, char const* pattern)
-{
-	Afx::BinUtils::ImageSectionsReader sections((HMODULE)dll);
-	Afx::BinUtils::MemRange textRange = sections.GetMemRange();
-	Afx::BinUtils::MemRange result = FindPatternString(textRange, pattern);
-	if (result.IsEmpty()) {
-		advancedfx::Warning("Could not find address for pattern: %s\n", pattern);
-		return 0;
-	} else {
-		return result.Start;
-	}
-};
-
-size_t getVTableFn(HMODULE dll, int index, const char* mangledClass) {
-	size_t out = 0;
-	if (void ** vtable = (void **)Afx::BinUtils::FindClassVtable(dll, mangledClass, 0, 0)) {
-		out = (size_t)vtable[index]; 
-	} 
-	return out;
-}
-
 // feel free to move it in more appropriate place
 namespace afxUtils {
 	std::string createTable(std::vector<std::vector<std::string>>& rows, char* delimiter, char* emptyRowDelimiter) {

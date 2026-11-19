@@ -10,6 +10,8 @@
 #include "../shared/binutils.h"
 
 #include "AfxHookSource2Rs.h"
+#include "addresses.h"
+#include "Globals.h"
 
 #include <Windows.h>
 #include "../deps/release/Detours/src/detours.h"
@@ -87,24 +89,27 @@ bool New_CGameEventManager_FireEventClientSide( void * This, SOURCESDK::CS2::CGa
     return g_Old_CGameEventManager_FireEventClientSide(This, event);
 }
 
-bool Hook_CGameEventManager(void* addrClientDll) {
+bool Hook_CGameEventManager() {
     static bool firstResult = false;
     static bool firstRun = true;
 
     if(firstRun) {
         firstRun = false;
 
-        if(size_t arddrVtable = Afx::BinUtils::FindClassVtable((HMODULE)addrClientDll,".?AVCGameEventManager@@",0,0)) {
-            void ** vtable = (void**)arddrVtable;
-            g_CGameEventManager_CreateEvent = (CGameEventManager_CreateEvent_t)vtable[6];
-            g_Old_CGameEventManager_FireEvent = (CGameEventManager_FireEvent_t)vtable[7];
-            g_Old_CGameEventManager_FireEventClientSide = (CGameEventManager_FireEventClientSide_t)vtable[8];
-            g_CGameEventManager_FreeEvent = (CGameEventManager_FreeEvent_t)vtable[10];
+        if(AFXADDR_GET(cs2_client_CGameEventManager_CreateEvent)
+            && AFXADDR_GET(cs2_client_CGameEventManager_FireEvent)
+            && AFXADDR_GET(cs2_client_CGameEventManager_FireEventClientSide)
+            && AFXADDR_GET(cs2_client_CGameEventManager_FreeEvent)) {
+            g_CGameEventManager_CreateEvent = (CGameEventManager_CreateEvent_t)AFXADDR_GET(cs2_client_CGameEventManager_CreateEvent);
+            g_Old_CGameEventManager_FireEvent = (CGameEventManager_FireEvent_t)AFXADDR_GET(cs2_client_CGameEventManager_FireEvent);
+            g_Old_CGameEventManager_FireEventClientSide = (CGameEventManager_FireEventClientSide_t)AFXADDR_GET(cs2_client_CGameEventManager_FireEventClientSide);
+            g_CGameEventManager_FreeEvent = (CGameEventManager_FreeEvent_t)AFXADDR_GET(cs2_client_CGameEventManager_FreeEvent);
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             DetourAttach(&(PVOID&)g_Old_CGameEventManager_FireEvent, New_CGameEventManager_FireEvent);
             DetourAttach(&(PVOID&)g_Old_CGameEventManager_FireEventClientSide, New_CGameEventManager_FireEventClientSide);
             firstResult = NO_ERROR == DetourTransactionCommit();
+            if(!firstResult) ErrorBox("Failed to detour CGameEventManager functions.");
         }
     }
 
