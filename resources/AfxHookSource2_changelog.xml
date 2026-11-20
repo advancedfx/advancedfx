@@ -6,6 +6,18 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.42.1</version>
+<time>2026-11-20T08:20Z</time>
+<changes>
+<change type="fixed">Adjusted to CS2 update (1.42.0.0).</change>
+<change type="fixed">Fixed mirv-script crash when reading campath in it's changed event.</change>
+<change type="fixed">Fixed type for entity handle from int32 to uint32. Note: mirv-script users, invalid handle now is 0xFFFFFFFF instead of -1 in case you check it explicitly instead of using isHandleValid function.</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.42.0</version>
 <time>2026-11-06T23:30Z</time>
 <changes>
