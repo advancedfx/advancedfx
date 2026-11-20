@@ -6,7 +6,12 @@
 #include "SceneSystem.h"
 #include "SchemaSystem.h"
 
+#include "../deps/release/prop/AfxHookSource/SourceSdkShared.h"
+#include "../deps/release/prop/cs2/sdk_src/public/cdll_int.h"
+
 #include <algorithm>
+
+extern SOURCESDK::CS2::ISource2EngineToClient * g_pEngineToClient;
 
 bool g_bHookedMirvCommands = false;
 
@@ -44,6 +49,61 @@ void mirvEndOfMatch_Console(advancedfx::ICommandArgs* args) {
 CON_COMMAND(mirv_endofmatch, "Disables end of match scene.")
 {
 	mirvEndOfMatch_Console(args);
+}
+
+CON_COMMAND(mirv_demo_pause_at_end, "Pause demo playback at the end.")
+{
+	int argc = args->ArgC();
+	const char * arg0 = args->ArgV(0);
+
+	if (2 != argc) {
+		advancedfx::Message(
+			"%s <0|1> - Set whether demo playback pauses at the end.\n"
+			, arg0
+		);
+		return;
+	}
+
+	const char * value = args->ArgV(1);
+	if (0 != strcmp(value, "0") && 0 != strcmp(value, "1")) {
+		advancedfx::Warning("Invalid value for mirv_demo_pause_at_end; expected 0 or 1.\n");
+		return;
+	}
+
+	if (!g_pEngineToClient) {
+		advancedfx::Warning("Cannot set demo pause-at-end: engine interface is unavailable.\n");
+		return;
+	}
+
+	SOURCESDK::CS2::IDemoFile * pDemoPlayer = g_pEngineToClient->GetDemoFile();
+	if (!pDemoPlayer) {
+		advancedfx::Warning("Cannot set demo pause-at-end: demo player is unavailable.\n");
+		return;
+	}
+
+	// To rediscover this setter after CS2 updates, search the client binary for
+	// "Demo %s finished", then find the 6310 byte offset checked in the EOF path.
+    // CDemoPlayer vtable slot 34 sets that flag, which prevents returning to the menu.
+
+    // LABEL_247:
+    // if (LoggingSystem_IsChannelEnabled(dword_1807377F0, 2)) {
+    //     if (*(pDemoPlayer + 40))
+    //         v6 = *(pDemoPlayer + 40);
+    //     LoggingSystem_Log(dword_1807377F0, 2, "Demo %s finished\n", v6);
+    // }
+    // if (!*(pDemoPlayer + 6310)) {
+    //     (*(*g_pHostStateMgr001 + 96LL))(g_pHostStateMgr001, 0);
+    //     return 0;
+    // }
+    using DemoPlayerSetPauseAtEnd_t = void(__fastcall*)(SOURCESDK::CS2::IDemoFile*, bool);
+	void ** vtable = *reinterpret_cast<void ***>(pDemoPlayer);
+	auto setPauseAtEnd = reinterpret_cast<DemoPlayerSetPauseAtEnd_t>(vtable[34]);
+	if (!setPauseAtEnd) {
+		advancedfx::Warning("Cannot set demo pause-at-end: DemoPlayer vtable slot 34 is unavailable.\n");
+		return;
+	}
+
+	setPauseAtEnd(pDemoPlayer, 0 == strcmp(value, "1"));
 }
 
 typedef void (__fastcall *g_Original_OnFlashMaxAlphaChanged_t)(u_char* param_1, u_char* param_2, float* param_3);
