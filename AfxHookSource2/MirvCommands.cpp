@@ -408,25 +408,25 @@ CON_COMMAND(mirv_glow, "Manage glow drawing.")
             if (3 <= argC) {
                 const char * arg2 = args->ArgV(2);
                 if (!_stricmp("set", arg2) && 5 <= argC) {
-                    auto arg3 = atoi(args->ArgV(3));
+                    auto arg3 = (uint32_t)strtoul(args->ArgV(3), nullptr, 10);
                     g_MirvGlow.entities[arg3] = 0 != atoi(args->ArgV(4));
                     return;
                 }
                 else if (!_stricmp("remove", arg2) && 4 <= argC) {
-                    auto arg3 = atoi(args->ArgV(3));
+                    auto arg3 = (uint32_t)strtoul(args->ArgV(3), nullptr, 10);
                     g_MirvGlow.entities.erase(arg3);
                     return;
                 }
                 else if (!_stricmp("print", arg2)) {
                     for(auto it = g_MirvGlow.entities.begin(); it != g_MirvGlow.entities.end(); it++) {
-                        advancedfx::Message("%i: %i\n",it->first,it->second ? 1 : 0);
+                        advancedfx::Message("%u: %i\n",it->first,it->second ? 1 : 0);
                     }
                     return;
                 }                
             }
 			advancedfx::Message(
-				"%s %s set <iHandle> 0|1 - Enable (1) / disable (0) glow for given entity.\n"
-				"%s %s remove <iHandle> - Remove entry from list.\n"
+				"%s %s set <uHandle> 0|1 - Enable (1) / disable (0) glow for given entity.\n"
+				"%s %s remove <uHandle> - Remove entry from list.\n"
 				"%s %s print - Print entries.\n"
 				"Tip: use mirv_listentities to get handles.\n"
 				, arg0, arg1

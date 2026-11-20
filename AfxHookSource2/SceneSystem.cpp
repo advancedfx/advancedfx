@@ -880,7 +880,7 @@ static bool GetPickerHidden(const CBaseSceneData* pSceneData) {
 	if (!g_ScenePicker.IsActive()) return false;
 
 	const char* materialName = pSceneData && pSceneData->material ? pSceneData->material->GetName() : nullptr;
-	return g_ScenePicker.GetHidden(materialName, (uint32_t)(GetSceneDataEntityHandle(pSceneData).ToInt()));
+	return g_ScenePicker.GetHidden(materialName, GetSceneDataEntityHandle(pSceneData).ToInt());
 }
 
 static SceneObjectDrawPolicy SceneActionFilterActionToPolicy(SceneActionFilterAction action) {
@@ -912,13 +912,13 @@ static bool TryGetActionFilterPolicy(const SceneLayerContext& context, const CBa
 		}
 		auto handle = GetSceneDataEntityHandle(pSceneData);
 		if (handle.IsValid()) {
-			query.EntityHandle = (uint32_t)(handle.ToInt());
+			query.EntityHandle = handle.ToInt();
 			if (auto ent = (CEntityInstance*)g_GetEntityFromIndex(*g_pEntityList,handle.GetEntryIndex())) {
 				auto parentHandle = ent->GetParentHandle();
-				if (parentHandle.IsValid()) query.ParentEntityHandle = (uint32_t)(parentHandle.ToInt());
+				if (parentHandle.IsValid()) query.ParentEntityHandle = parentHandle.ToInt();
 
 				auto rootHandle = ent->GetRootHandle();
-				if (rootHandle.IsValid()) query.RootEntityHandle = (uint32_t)(rootHandle.ToInt());
+				if (rootHandle.IsValid()) query.RootEntityHandle = rootHandle.ToInt();
 
 				className = ent->GetClassName();
 				query.className = &className;
