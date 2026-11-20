@@ -135,7 +135,7 @@ unsigned int CEntityInstance::GetHealth() {
 }
 
 int CEntityInstance::GetTeam() {
-    return *(int*)((u_char*)(this) + g_clientDllOffsets.C_BaseEntity.m_iTeamNum);
+    return (int)(*(uint8_t*)((u_char*)(this) + g_clientDllOffsets.C_BaseEntity.m_iTeamNum));
 }
 
 
