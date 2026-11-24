@@ -6,6 +6,16 @@
 
 <release>
 <name>AfxHookSource2</name>
+<version>0.42.2</version>
+<time>2026-11-24T03:00Z</time>
+<changes>
+<change type="fixed">Adjusted to CS2 update (1.42.0.1). Thanks @filipealc</change>
+</changes>
+</release>
+
+
+<release>
+<name>AfxHookSource2</name>
 <version>0.42.1</version>
 <time>2026-11-20T08:20Z</time>
 <changes>
