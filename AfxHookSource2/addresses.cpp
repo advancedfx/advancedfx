@@ -168,7 +168,7 @@ void Addresses_InitClientDll(AfxAddr clientDll) {
             return;      
       */
 	{
-		MemRange result = FindPatternString(textRange, "f3 0f 10 53 ?? e8 ?? ?? ?? ?? 45 84 e4 75 0f 45 84 ff 75 ?? f3 0f 10 15 ?? ?? ?? ?? eb 05 f3 0f 10 53 ??");
+		MemRange result = FindPatternString(textRange, "F3 0F 10 53 ?? E8 ?? ?? ?? ?? 45 84 E4 75 0F 40 84 F6 75 ?? F3 0F 10 15 ?? ?? ?? ?? EB 05 F3 0F 10 53 ??");
 		if (!result.IsEmpty()) {
                   AFXADDR_SET(cs2_deathmsg_lifetime_offset, *(uint8_t*)(result.Start + 4));
                   AFXADDR_SET(cs2_deathmsg_lifetimemod_offset, *(uint8_t*)(result.Start + 34));
